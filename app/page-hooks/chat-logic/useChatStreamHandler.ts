@@ -57,13 +57,6 @@ export function useChatStreamHandler({
   }, [setIsStreamCancelledForParent]);
 
   const handleSend = useCallback(async (messageContent: string) => {
-    if (!apiKey && currentSelectedGroup !== 'image') { // Image generation uses a hardcoded key for now
-        toast.error("API Key is required.");
-        setLastError("API Key is required.");
-        setErrorType('generic'); 
-        setChatStatus('error');
-        return;
-    }
     if (chatStatus === 'processing') {
         toast.warning("Please wait for the current response.");
         return;
@@ -71,6 +64,13 @@ export function useChatStreamHandler({
 
     // IMAGE MODE: If currentSelectedGroup is 'image', call image generation API
     if (currentSelectedGroup === 'image') {
+      if (!apiKey) { // Check for API key in image mode too
+          toast.error("API Key is required for image generation.");
+          setLastError("API Key is required for image generation.");
+          setErrorType('generic');
+          setChatStatus('error');
+          return;
+      }
       const prompt = messageContent.trim();
       if (!prompt) return;
       setChatStatus('processing');
@@ -106,7 +106,7 @@ export function useChatStreamHandler({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ddc-a4f-039cf79cd8b546518385959f60f4b358', // Updated API key
+            'Authorization': `Bearer ${apiKey}`, // Use the user-provided API key
           },
           body: JSON.stringify({
             model: 'provider-2/flux.1-schnell',
@@ -131,7 +131,7 @@ export function useChatStreamHandler({
         }
 
         const data = await response.json();
-        const imageUrl = data?.data?.[0]?.url; // Uses the 'url' field as requested
+        const imageUrl = data?.data?.[0]?.url;
         
         setMessages(prev => prev.map(msg =>
           msg.id === assistantMessageId
@@ -166,8 +166,8 @@ export function useChatStreamHandler({
       return;
     }
 
-    // ... (rest of the chat completion logic for non-image groups)
-    if (!apiKey) { // This check is now specifically for non-image groups
+    // Chat completion logic for non-image groups
+    if (!apiKey) {
         toast.error("API Key is required for chat functions.");
         setLastError("API Key is required for chat functions.");
         setErrorType('generic');
