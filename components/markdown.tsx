@@ -215,15 +215,15 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   const renderer = useMemo((): Partial<ReactRenderer> => {
     let localKeyCounter = 0;
 
+    const generateKey = (prefix: string) => `${prefix}-${localKeyCounter++}`;
+
     const ensureKeyedChildren = (children: ReactNode, baseKey: string) => {
         return React.Children.map(children, (child, index) => {
             if (isValidElement(child)) {
-                // If child already has a key (e.g. from text renderer), use it. Otherwise generate.
-                return React.cloneElement(child, { key: child.key ?? `${baseKey}-${index}` });
+                return React.cloneElement(child, { key: child.key ?? `${baseKey}-${index}-${localKeyCounter++}` });
             }
-            // For raw text nodes, wrap in a span with a key
             if (typeof child === 'string' || typeof child === 'number') {
-                return <span key={`${baseKey}-text-${index}`}>{child}</span>;
+                return <span key={`${baseKey}-text-${index}-${localKeyCounter++}`}>{child}</span>;
             }
             return child;
         });
@@ -231,15 +231,14 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
 
     return {
       text(text: string) {
-        const key = `txt-${localKeyCounter++}-${checksum(text.substring(0, 10))}`;
+        const key = generateKey('txtVal'); // Changed from `txt` to avoid conflict with ensureKeyedChildren if it were to use 'txt' as baseKey
         if (!text.includes('$')) {
             return <span key={key}>{text}</span>;
         }
         try {
-              const latexKey = `ltx-${localKeyCounter++}-${checksum(text.substring(0, 10))}`;
               return (
                   <Latex
-                      key={latexKey}
+                      key={key}
                       delimiters={[
                           { left: '$$', right: '$$', display: true },
                           { left: '$', right: '$', display: false }
@@ -251,20 +250,19 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
               );
           } catch (error) {
               console.warn("LaTeX rendering error:", error, "Original text:", text);
-              const errorKey = `ltx-err-${localKeyCounter++}-${checksum(text.substring(0, 10))}`;
-              return <span key={errorKey}>{text}</span>;
+              return <span key={`${key}-err`}>{text}</span>;
           }
       },
       paragraph(children) {
-        return <p className="my-5 leading-relaxed text-neutral-700 dark:text-neutral-300">{ensureKeyedChildren(children, 'p-child')}</p>;
+        return <p key={generateKey('p')} className="my-5 leading-relaxed text-neutral-700 dark:text-neutral-300">{ensureKeyedChildren(children, 'p-child')}</p>;
       },
-      code(children, language) {
-        return <CodeBlock language={language}>{String(children)}</CodeBlock>;
+      code(children, language) { // This is for fenced code blocks
+        return <CodeBlock key={generateKey('codeblock')} language={language}>{String(children)}</CodeBlock>;
       },
-      link(href, text) {
+      link(href, text) { // For inline links, the key is typically handled by the parent or ensureKeyedChildren on `text`
         return isValidUrl(href)
-          ? <Link href={href} target="_blank" rel="noopener noreferrer" className="text-primary dark:text-primary-light hover:underline font-medium">{text}</Link>
-          : <span className="text-neutral-700 dark:text-neutral-300 font-medium">{text}</span>;
+          ? <Link href={href} target="_blank" rel="noopener noreferrer" className="text-primary dark:text-primary-light hover:underline font-medium">{ensureKeyedChildren(text, 'link-text')}</Link>
+          : <span className="text-neutral-700 dark:text-neutral-300 font-medium">{ensureKeyedChildren(text, 'nolink-text')}</span>;
       },
       heading(children, level) {
         const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
@@ -277,36 +275,32 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
           6: "text-xs md:text-sm font-medium mt-4 mb-2",
         }[level] || "";
         return (
-          <HeadingTag className={`${sizeClasses} text-neutral-900 dark:text-neutral-50 tracking-tight`}>
+          <HeadingTag key={generateKey(`h${level}`)} className={`${sizeClasses} text-neutral-900 dark:text-neutral-50 tracking-tight`}>
             {ensureKeyedChildren(children, `h${level}-child`)}
           </HeadingTag>
         );
       },
-      list(children, ordered) {
-        // marked-react itself will pass an array of <li> elements as children here.
-        // Each <li> should already be keyed by marked-react's processing of the list items.
+      list(children, ordered) { // `children` is an array of already keyed <li> elements
         const ListTag = ordered ? 'ol' : 'ul';
         return (
-          <ListTag className={`my-5 pl-6 space-y-2 text-neutral-700 dark:text-neutral-300 ${ordered ? 'list-decimal' : 'list-disc'}`}>
+          <ListTag key={generateKey(ordered ? 'ol' : 'ul')} className={`my-5 pl-6 space-y-2 text-neutral-700 dark:text-neutral-300 ${ordered ? 'list-decimal' : 'list-disc'}`}>
             {children}
           </ListTag>
         );
       },
-      listItem(children) {
-        // `children` here is the content inside a single <li>.
-        // This content might be an array of text nodes, spans, LaTeX elements.
-        return <li className="pl-1 leading-relaxed">{ensureKeyedChildren(children, 'li-child')}</li>;
+      listItem(children) { // `children` is the rendered content of the list item
+        return <li key={generateKey('li')} className="pl-1 leading-relaxed">{ensureKeyedChildren(children, 'li-child')}</li>;
       },
       blockquote(children) {
         return (
-          <blockquote className="my-6 border-l-4 border-primary/30 dark:border-primary/20 pl-4 py-1 text-neutral-700 dark:text-neutral-300 italic bg-neutral-50 dark:bg-neutral-900/50 rounded-r-md">
+          <blockquote key={generateKey('bq')} className="my-6 border-l-4 border-primary/30 dark:border-primary/20 pl-4 py-1 text-neutral-700 dark:text-neutral-300 italic bg-neutral-50 dark:bg-neutral-900/50 rounded-r-md">
             {ensureKeyedChildren(children, 'bq-child')}
           </blockquote>
         );
       },
-      table(children) {
+      table(children) { // `children` is [thead, tbody]
         return (
-          <div className="w-full my-6 overflow-hidden rounded-md">
+          <div key={generateKey('table-wrapper')} className="w-full my-6 overflow-hidden rounded-md">
             <div className="w-full overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 shadow-xs">
               <table className="w-full border-collapse min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 m-0!">
                 {children}
@@ -315,10 +309,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
           </div>
         );
       },
-      tableRow(children) {
+      tableRow(children) { // `children` is an array of rendered <td> or <th> elements
          return (
-          <tr className="border-b border-neutral-200 dark:border-neutral-800 last:border-0">
-            {children}
+          <tr key={generateKey('tr')} className="border-b border-neutral-200 dark:border-neutral-800 last:border-0">
+            {children} {/* These children should already be keyed by tableCell */}
           </tr>
         );
       },
@@ -331,22 +325,22 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
             : cn("px-4 py-3 text-sm text-neutral-700 dark:text-neutral-300", "bg-white dark:bg-neutral-900", align);
 
          return (
-            <CellTag className={cellClasses}>
+            <CellTag key={generateKey(isHeader ? 'th' : 'td')} className={cellClasses}>
                 {ensureKeyedChildren(children, `${isHeader ? 'th' : 'td'}-child`)}
             </CellTag>
          );
       },
-      tableHeader(children) {
+      tableHeader(children) { // `children` is an array of <tr> elements
         return (
-          <thead className="bg-neutral-100 dark:bg-neutral-800/90">
-            {children}
+          <thead key={generateKey('thead')} className="bg-neutral-100 dark:bg-neutral-800/90">
+            {children} {/* These children (<tr>) should be keyed by tableRow */}
           </thead>
         );
       },
-      tableBody(children) {
+      tableBody(children) { // `children` is an array of <tr> elements
         return (
-          <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800 bg-white dark:bg-neutral-900">
-            {children}
+          <tbody key={generateKey('tbody')} className="divide-y divide-neutral-200 dark:divide-neutral-800 bg-white dark:bg-neutral-900">
+            {children} {/* These children (<tr>) should be keyed by tableRow */}
           </tbody>
         );
       },
