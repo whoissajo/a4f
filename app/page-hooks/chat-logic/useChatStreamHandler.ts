@@ -64,7 +64,7 @@ export function useChatStreamHandler({
 
     // IMAGE MODE: If currentSelectedGroup is 'image', call image generation API
     if (currentSelectedGroup === 'image') {
-      if (!apiKey) { // Check for API key in image mode too
+      if (!apiKey) { 
           toast.error("API Key is required for image generation.");
           setLastError("API Key is required for image generation.");
           setErrorType('generic');
@@ -95,7 +95,7 @@ export function useChatStreamHandler({
         content: '',
         createdAt: new Date(),
         isStreaming: true,
-        modelId: 'provider-2/flux.1-schnell', // Model used for image generation
+        modelId: selectedModelValue, // Use the currently selected model
         isError: false,
       };
       setMessages(prev => [...prev, assistantPlaceholder]);
@@ -106,10 +106,10 @@ export function useChatStreamHandler({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`, // Use the user-provided API key
+            'Authorization': `Bearer ${apiKey}`, 
           },
           body: JSON.stringify({
-            model: 'provider-2/flux.1-schnell',
+            model: selectedModelValue, // Use the currently selected model
             prompt,
           }),
         });
@@ -122,9 +122,9 @@ export function useChatStreamHandler({
           } catch (e) {
             try {
                 const textError = await response.text();
-                errorBodyText += `. Response: ${textError.substring(0, 200)}`; // Limit length of text response in error
+                errorBodyText += `. Response: ${textError.substring(0, 200)}`; 
             } catch (textE) {
-                // Ignore if getting text also fails
+                // Ignore
             }
           }
           throw new Error(errorBodyText);
@@ -139,7 +139,7 @@ export function useChatStreamHandler({
                 ...msg,
                 content: imageUrl ? `![Generated Image](${imageUrl})` : 'No image URL returned by API.',
                 isStreaming: false,
-                modelId: 'provider-2/flux.1-schnell',
+                modelId: selectedModelValue, // Reflect the model used
               }
             : msg
         ));
@@ -155,6 +155,7 @@ export function useChatStreamHandler({
                 isStreaming: false,
                 isError: true,
                 errorType: 'generic',
+                modelId: selectedModelValue, // Reflect the model attempted
               }
             : msg
         ));
