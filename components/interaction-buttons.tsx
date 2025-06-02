@@ -1,6 +1,6 @@
 // components/interaction-buttons.tsx
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, ThumbsUp, ThumbsDown, Volume2, Download } from 'lucide-react';
+import { Copy, Check, ThumbsUp, ThumbsDown, Volume2, Download, VolumeX } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
   const [isCopied, setIsCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const imageUrlRegex = /!\[.*?\]\((.*?)\)/;
   const imageMatch = content.match(imageUrlRegex);
@@ -29,6 +30,16 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
       if (savedDislikeState === 'true') setIsDisliked(true);
     }
   }, [messageId]);
+
+  // Cleanup speech synthesis on component unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+      }
+    };
+  }, []);
 
   // Handle copy functionality
   const handleCopy = async () => {
@@ -90,7 +101,28 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
       toast.info("Text-to-speech is not available for images.");
       return;
     }
-    toast.info("Text-to-speech feature will be available soon!");
+
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+        // If the current message is the one being spoken, stop it.
+        // Otherwise, stop the current speech and start the new one.
+        if (isSpeaking) return; 
+      }
+
+      const utterance = new SpeechSynthesisUtterance(content);
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = (event) => {
+        console.error('SpeechSynthesisUtterance.onerror', event);
+        toast.error("Text-to-speech error. Your browser might not support it or it's disabled.");
+        setIsSpeaking(false);
+      };
+      window.speechSynthesis.speak(utterance);
+    } else {
+      toast.error("Text-to-speech is not supported by your browser.");
+    }
   };
 
   // Handle download button click
@@ -177,9 +209,9 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
             size="sm"
             onClick={handleSpeaker}
             className="h-8 w-8 p-0 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
-            aria-label="Text to speech"
+            aria-label={isSpeaking ? "Stop speech" : "Text to speech"}
           >
-            <Volume2 className="h-4 w-4" />
+            {isSpeaking ? <VolumeX className="h-4 w-4 text-red-500" /> : <Volume2 className="h-4 w-4" />}
           </Button>
         </motion.div>
       )}
@@ -213,7 +245,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
           aria-label="Copy to clipboard"
         >
           {isCopied ? (
-            <Check className="h-4 w-4" />
+            <Check className="h-4 w-4 text-green-500" />
           ) : (
             <Copy className="h-4 w-4" />
           )}
