@@ -1,6 +1,6 @@
 // components/interaction-buttons.tsx
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, ThumbsUp, ThumbsDown, Volume2 } from 'lucide-react';
+import { Copy, Check, ThumbsUp, ThumbsDown, Volume2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,10 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
   const [isCopied, setIsCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
+
+  const imageUrlRegex = /!\[.*?\]\((.*?)\)/;
+  const imageMatch = content.match(imageUrlRegex);
+  const imageUrl = imageMatch ? imageMatch[1] : null;
 
   // Load like/dislike state from localStorage on component mount
   useEffect(() => {
@@ -34,13 +38,15 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
     }
     
     try {
-      await navigator.clipboard.writeText(content);
+      // If it's an image, copy the URL, otherwise copy the text content
+      const textToCopy = imageUrl || content;
+      await navigator.clipboard.writeText(textToCopy);
       setIsCopied(true);
-      toast.success("Copied to clipboard");
+      toast.success(imageUrl ? "Image URL copied to clipboard" : "Copied to clipboard");
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy text: ', err);
-      toast.error("Failed to copy text.");
+      console.error('Failed to copy: ', err);
+      toast.error(imageUrl ? "Failed to copy image URL." : "Failed to copy text.");
     }
   };
 
@@ -49,13 +55,11 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
     const newLikedState = !isLiked;
     setIsLiked(newLikedState);
     
-    // If liking, remove dislike
     if (newLikedState && isDisliked) {
       setIsDisliked(false);
       localStorage.removeItem(`message-disliked-${messageId}`);
     }
     
-    // Save to localStorage
     if (newLikedState) {
       localStorage.setItem(`message-liked-${messageId}`, 'true');
     } else {
@@ -68,13 +72,11 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
     const newDislikedState = !isDisliked;
     setIsDisliked(newDislikedState);
     
-    // If disliking, remove like
     if (newDislikedState && isLiked) {
       setIsLiked(false);
       localStorage.removeItem(`message-liked-${messageId}`);
     }
     
-    // Save to localStorage
     if (newDislikedState) {
       localStorage.setItem(`message-disliked-${messageId}`, 'true');
     } else {
@@ -84,7 +86,45 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
 
   // Handle speaker button click
   const handleSpeaker = () => {
+    if (imageUrl) {
+      toast.info("Text-to-speech is not available for images.");
+      return;
+    }
     toast.info("Text-to-speech feature will be available soon!");
+  };
+
+  // Handle download button click
+  const handleDownload = async () => {
+    if (!imageUrl) return;
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      const localUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = localUrl;
+      
+      let filename = decodeURIComponent(imageUrl.substring(imageUrl.lastIndexOf('/') + 1));
+      // Remove query parameters from filename if any
+      filename = filename.split('?')[0];
+
+      if (!filename || !filename.includes('.')) {
+        const extension = blob.type.split('/')[1] || 'png';
+        filename = `image-${messageId}.${extension}`;
+      }
+      link.download = filename;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(localUrl);
+      toast.success("Image download started");
+    } catch (err: any) {
+      console.error('Failed to download image:', err);
+      toast.error(`Failed to download image: ${err.message}`);
+    }
   };
 
   return (
@@ -127,20 +167,39 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
         </Button>
       </motion.div>
 
-      <motion.div
-        whileTap={{ scale: 0.85 }}
-        transition={{ type: "spring", stiffness: 400, damping: 17 }}
-      >
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSpeaker}
-          className="h-8 w-8 p-0 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
-          aria-label="Text to speech"
+      {!imageUrl && ( // Only show speaker button if it's not an image
+        <motion.div
+          whileTap={{ scale: 0.85 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
-          <Volume2 className="h-4 w-4" />
-        </Button>
-      </motion.div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSpeaker}
+            className="h-8 w-8 p-0 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            aria-label="Text to speech"
+          >
+            <Volume2 className="h-4 w-4" />
+          </Button>
+        </motion.div>
+      )}
+
+      {imageUrl && ( // Only show download button if it's an image
+        <motion.div
+          whileTap={{ scale: 0.85 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDownload}
+            className="h-8 w-8 p-0 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            aria-label="Download image"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+        </motion.div>
+      )}
 
       <motion.div
         whileTap={{ scale: 0.85 }}
