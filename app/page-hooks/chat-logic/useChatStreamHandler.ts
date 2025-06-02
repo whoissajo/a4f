@@ -102,11 +102,11 @@ export function useChatStreamHandler({
       setInput('');
       if (currentMessages.length === 0) setHasSubmitted(true);
       try {
-        const response = await fetch('https://api.a4f.co/v1/images/generations?', {
+        const response = await fetch('https://api.a4f.co/v1/images/generations', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ddc-a4f-fcea5f46a9ca4b8083d71eafdb236632', // Hardcoded API key for image generation
+            'Authorization': 'Bearer ddc-a4f-039cf79cd8b546518385959f60f4b358', // Updated API key
           },
           body: JSON.stringify({
             model: 'provider-2/flux.1-schnell',
