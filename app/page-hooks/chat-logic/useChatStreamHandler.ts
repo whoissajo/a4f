@@ -64,7 +64,7 @@ export function useChatStreamHandler({
 
     // IMAGE MODE: If currentSelectedGroup is 'image', call image generation API
     if (currentSelectedGroup === 'image') {
-      if (!apiKey) { 
+      if (!apiKey) {
           toast.error("API Key is required for image generation.");
           setLastError("API Key is required for image generation.");
           setErrorType('generic');
@@ -95,7 +95,7 @@ export function useChatStreamHandler({
         content: '',
         createdAt: new Date(),
         isStreaming: true,
-        modelId: selectedModelValue, // Use the currently selected model
+        modelId: selectedModelValue,
         isError: false,
       };
       setMessages(prev => [...prev, assistantPlaceholder]);
@@ -106,10 +106,10 @@ export function useChatStreamHandler({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`, 
+            'Authorization': `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            model: selectedModelValue, // Use the currently selected model
+            model: selectedModelValue,
             prompt,
           }),
         });
@@ -122,7 +122,7 @@ export function useChatStreamHandler({
           } catch (e) {
             try {
                 const textError = await response.text();
-                errorBodyText += `. Response: ${textError.substring(0, 200)}`; 
+                errorBodyText += `. Response: ${textError.substring(0, 200)}`;
             } catch (textE) {
                 // Ignore
             }
@@ -139,13 +139,18 @@ export function useChatStreamHandler({
                 ...msg,
                 content: imageUrl ? `![Generated Image](${imageUrl})` : 'No image URL returned by API.',
                 isStreaming: false,
-                modelId: selectedModelValue, // Reflect the model used
+                modelId: selectedModelValue,
               }
             : msg
         ));
       } catch (error: any) {
         console.error("Image generation API error:", error);
-        const errorMessageToDisplay = error.message || 'Image generation failed due to an unknown error.';
+        let errorMessageToDisplay = error.message || 'Image generation failed due to an unknown error.';
+        
+        // Check if it's a 400 error, often due to incompatible model for image generation
+        if (error.message && typeof error.message === 'string' && error.message.includes('status 400')) {
+            errorMessageToDisplay = `Please select an image generation model. ${errorMessageToDisplay}`;
+        }
         
         setMessages(prev => prev.map(msg =>
           msg.id === assistantMessageId
@@ -154,8 +159,8 @@ export function useChatStreamHandler({
                 content: errorMessageToDisplay,
                 isStreaming: false,
                 isError: true,
-                errorType: 'generic',
-                modelId: selectedModelValue, // Reflect the model attempted
+                errorType: 'generic', // Keep as generic for now, or introduce a new type if specific styling is needed
+                modelId: selectedModelValue,
               }
             : msg
         ));
