@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { fallbackModels } from '@/app/page-config/model-fallbacks';
@@ -41,12 +42,12 @@ export function useChatLogic() {
   } = useChatCoreState();
 
   const {
-    handleSend, handleStopStreaming,
+    handleSend, handleStopStreaming, handleRetry, // Added handleRetry
     chatStatus,
     isStreamCancelledByUser,
-    lastError: chatLastError, // Renamed to avoid conflict
-    errorType: chatErrorType, // Renamed
-    errorDetails: chatErrorDetails, // Renamed
+    lastError: chatLastError, 
+    errorType: chatErrorType, 
+    errorDetails: chatErrorDetails, 
   } = useChatStreamHandler({
     apiKey,
     selectedModelValue: selectedModel,
@@ -74,7 +75,6 @@ export function useChatLogic() {
 
   // Consolidate errors (prefer chat error if both exist)
   const lastError = chatLastError || modelFetchingError;
-  // This is a simplification; you might want more sophisticated error type/details merging
   const errorType = chatErrorType || (modelFetchingStatus === 'error' ? 'generic' : 'generic');
   const errorDetails = chatErrorDetails || null;
 
@@ -96,10 +96,10 @@ export function useChatLogic() {
     attachments, setAttachments,
     systemPrompt, setSystemPrompt,
     isSystemPromptVisible, setIsSystemPromptVisible,
-    status: overallStatus, // Use derived status
+    status: overallStatus, 
     
     // Chat actions
-    handleSend, handleStopStreaming, fetchAccountInfo, resetChatState,
+    handleSend, handleStopStreaming, handleRetry, fetchAccountInfo, resetChatState, // Added handleRetry
     
     // Group selection
     selectedGroup, setSelectedGroup,
@@ -121,10 +121,10 @@ export function useChatLogic() {
     fileInputRef, inputRef, systemPromptInputRef,
     
     // Stream and error handling
-    isStreamCancelledByUser, // from useChatStreamHandler
-    lastError, // consolidated
-    errorType, // consolidated
-    errorDetails, // consolidated
+    isStreamCancelledByUser, 
+    lastError, 
+    errorType, 
+    errorDetails, 
     
     // API key helpers
     isTavilyKeyAvailable,

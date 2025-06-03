@@ -1,6 +1,7 @@
+
 // components/interaction-buttons.tsx
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, ThumbsUp, ThumbsDown, Volume2, Download, VolumeX } from 'lucide-react';
+import { Copy, Check, ThumbsUp, ThumbsDown, Volume2, Download, VolumeX, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -8,13 +9,16 @@ import { Button } from '@/components/ui/button';
 interface InteractionButtonsProps {
   messageId: string;
   content: string;
+  onRetry?: (assistantMessageId: string) => void; // New prop
+  isError?: boolean; // To show retry for errors
 }
 
-export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageId, content }) => {
+export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageId, content, onRetry, isError }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const imageUrlRegex = /!\[.*?\]\((.*?)\)/;
   const imageMatch = content.match(imageUrlRegex);
@@ -37,6 +41,10 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
       if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
         setIsSpeaking(false);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
     };
   }, []);
@@ -112,6 +120,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
       }
 
       const utterance = new SpeechSynthesisUtterance(content);
+      utterance.rate = 1.5; // Set speech rate
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = (event) => {
@@ -161,6 +170,23 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
 
   return (
     <div className="flex gap-2 justify-end mt-2 mb-1">
+      {onRetry && (isError || content) && ( // Show retry if onRetry is provided and it's an error message or a completed content message
+        <motion.div
+            whileTap={{ scale: 0.85 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+            <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onRetry(messageId)}
+                className="h-8 w-8 p-0 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                aria-label="Retry"
+                title="Retry"
+            >
+                <RotateCcw className="h-4 w-4" />
+            </Button>
+        </motion.div>
+      )}
       <motion.div
         whileTap={{ scale: 0.85 }}
         transition={{ type: "spring", stiffness: 400, damping: 17 }}

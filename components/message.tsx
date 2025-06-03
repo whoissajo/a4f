@@ -1,11 +1,12 @@
+
 // components/message.tsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { MarkdownRenderer } from '@/components/markdown';
-import { TextFadeAnimation } from '@/components/text-fade-animation'; // Import the new fade animation component
+import { TextFadeAnimation } from '@/components/text-fade-animation'; 
 import { User, Bot, Clock, AlertTriangle, AlertOctagon, ExternalLink } from 'lucide-react';
-import { cn, SimpleMessage, ModelUIData } from '@/lib/utils'; // Use types from utils
+import { cn, SimpleMessage, ModelUIData } from '@/lib/utils'; 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { Button } from '@/components/ui/button';
 import { InteractionButtons } from '@/components/interaction-buttons';
@@ -15,35 +16,34 @@ import { ThinkingCardDisplay } from '@/components/thinking-card';
 interface MessageProps {
     message: SimpleMessage;
     index: number;
-    models?: ModelUIData[]; // Available models for logo display
-    userAvatarUrl?: string | null; // User's avatar URL
+    models?: ModelUIData[]; 
+    userAvatarUrl?: string | null; 
+    onRetry?: (assistantMessageIdToRetry: string) => void; // Added onRetry
 }
 
-// Removed detectErrorType function as we now use explicit error properties
 
-export const Message: React.FC<MessageProps> = ({ message, index, models = [], userAvatarUrl = null }) => {
+export const Message: React.FC<MessageProps> = ({ message, index, models = [], userAvatarUrl = null, onRetry }) => {
     const isUser = message.role === 'user';
     const isStreaming = message.role === 'assistant' && message.isStreaming;
     const isErrorMessage = !isUser && message.isError === true;
     const actualErrorType = message.errorType || 'generic';
     
-    // Helper function to handle the upgrade button click
+    
     const handleUpgradeClick = () => {
         window.open('https://a4f.co/pricing', '_blank');
     };
 
     const renderAiLogo = (modelId?: string) => {
-        // Find model by its value (which is the model ID)
+        
         const model = modelId ? models.find((model) => model.value === modelId) : undefined;
         
         if (model?.logoUrl) {
-            // For logo URLs, check if we should use a separate dark mode specific image
-            // This is a common approach where some logos have dark/light variants
+            
             const logoUrl = model.logoUrl;
             
             return (
                 <div className="relative w-5 h-5 flex items-center justify-center">
-                    {/* Light mode version - only shown in light mode */}
+                    
                     <Image
                         src={logoUrl}
                         alt={model.label || 'AI'}
@@ -52,7 +52,7 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                         className="dark:hidden"
                         unoptimized
                     />
-                    {/* Dark mode version - only shown in dark mode */}
+                    
                     <Image
                         src={logoUrl}
                         alt={model.label || 'AI'}
@@ -64,8 +64,7 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                 </div>
             );
         }
-        // Default fallback to the generic Bot icon
-        // Bot icon already has proper contrast with text-neutral classes
+        
         return <Bot className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />;
     };
 
@@ -77,14 +76,14 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
             transition={{ duration: 0.3, delay: isUser ? 0 : 0.1 }}
             className={cn(
                 "px-0 mb-4 sm:mb-5",
-                isUser ? "flex justify-end" : "flex justify-start" // Align outer container
+                isUser ? "flex justify-end" : "flex justify-start" 
             )}
         >
             <div className={cn(
                 "flex items-start gap-2 sm:gap-3 w-full",
                 isUser ? "justify-end" : "justify-start"
             )}>
-                {/* Assistant Icon (Left) */}
+                
                 {!isUser && (
                     <div className={cn(
                         "flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center self-start border border-neutral-200 dark:border-neutral-800",
@@ -95,15 +94,15 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                     </div>
                 )}
 
-                {/* Message Content Container (No Bubble Styling) */}
+                
                 <div className={cn(
-                    "flex flex-col", // Stack content
-                    "max-w-[85%] sm:max-w-[75%] md:max-w-[70%]" // Limit width
-                    // REMOVED: Bubble background, padding, and border-radius classes
+                    "flex flex-col", 
+                    "max-w-[85%] sm:max-w-[75%] md:max-w-[70%]" 
+                    
                 )}>
-                    {/* Removed the inner div with bubble styling */}
+                    
                     {isUser ? (
-                        <div className="text-base font-medium break-words whitespace-pre-wrap text-neutral-900 dark:text-neutral-100"> {/* Ensure text color is set */}
+                        <div className="text-base font-medium break-words whitespace-pre-wrap text-neutral-900 dark:text-neutral-100"> 
                             <MarkdownRenderer content={message.content} />
                         </div>
                     ) : isErrorMessage ? (
@@ -114,7 +113,7 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                         />
                     
                     ) : isStreaming && !message.content && !message.thinkingContent ? (
-                        // Thinking Animation - ONLY displayed when there's no content yet
+                        
                         <div className="py-2">
                             <div className="flex items-center space-x-2">
                                 <motion.div 
@@ -179,9 +178,9 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                             />
                         </div>
                     ) : (
-                        // Use TextFadeAnimation for streaming, otherwise use the regular MarkdownRenderer
+                        
                         <>
-                            {/* Thinking Card - Display before the main content */}
+                            
                             {(message.thinkingContent || message.isThinkingInProgress) && (
                                 <ThinkingCardDisplay 
                                     thinkContent={message.thinkingContent || ''} 
@@ -189,7 +188,7 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                                 />
                             )}
 
-                            {/* Main Content */}
+                            
                             {isStreaming ? (
                                 <TextFadeAnimation 
                                     content={message.content} 
@@ -199,15 +198,20 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                                 <MarkdownRenderer content={message.content} />
                             )}
                             
-                            {/* Interaction Buttons - Only for assistant messages and when not streaming */}
+                            
                             {!isStreaming && message.content && (
-                                <InteractionButtons messageId={message.id} content={message.content} />
+                                <InteractionButtons 
+                                    messageId={message.id} 
+                                    content={message.content} 
+                                    onRetry={onRetry} // Pass onRetry
+                                    isError={message.isError} // Pass isError
+                                />
                             )}
                         </>
                     )}
                 </div>
 
-                 {/* User Icon (Right) */}
+                 
                 {isUser && (
                     <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center self-start mt-4 border border-neutral-300 dark:border-neutral-700 overflow-hidden">
                         {userAvatarUrl ? (
@@ -225,7 +229,7 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                     </div>
                 )}
 
-                 {/* Removed the old copy button that was positioned to the left */}
+                 
             </div>
         </motion.div>
     );

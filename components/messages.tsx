@@ -1,3 +1,4 @@
+
 // components/messages.tsx
 import React, { useRef, useEffect, useState } from 'react';
 import { Message } from '@/components/message';
@@ -9,9 +10,10 @@ interface MessagesProps {
     messages: SimpleMessage[];
     models?: ModelUIData[];
     userAvatarUrl?: string | null;
+    onRetry?: (assistantMessageIdToRetry: string) => void; // Added onRetry prop
 }
 
-const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUrl = null }) => {
+const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUrl = null, onRetry }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
@@ -49,7 +51,7 @@ const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUr
         }
     }, []);
 
-    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
         if (!scrollableParent) return;
 
         if (behavior === 'smooth') {
@@ -85,12 +87,12 @@ const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUr
         } else {
             scrollableParent.scrollTop = scrollableParent.scrollHeight;
         }
-    };
+    }, [scrollableParent]); // Added scrollableParent to dependencies
 
     useEffect(() => {
         const lastMessage = messages[messages.length - 1];
         if (messages.length > 0 && lastMessage && lastMessage.role === 'user') {
-            const isNewUserMessage = !lastMessage.isStreaming && !lastMessage.content.includes('[...]'); // Assuming content check is valid
+            const isNewUserMessage = !lastMessage.isStreaming && !lastMessage.content.includes('[...]'); 
             if (isNewUserMessage) {
                 setUserScrolled(false);
                 if (scrollableParent) {
@@ -104,7 +106,7 @@ const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUr
         if (isStreaming && !userScrolled) {
             scrollToBottom('auto');
         }
-    }, [messages, isStreaming, userScrolled, scrollToBottom]); // Added scrollToBottom to deps
+    }, [messages, isStreaming, userScrolled, scrollToBottom]); 
 
     useEffect(() => {
         if (!scrollableParent) return;
@@ -135,11 +137,12 @@ const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUr
         <div ref={containerRef} className="space-y-4 sm:space-y-6 mb-4 relative">
             {messages.map((message, index) => (
                 <Message
-                    key={message.id} // Use only message.id for a stable key
+                    key={message.id} 
                     message={message}
                     index={index}
                     models={models}
                     userAvatarUrl={userAvatarUrl}
+                    onRetry={message.role === 'assistant' ? onRetry : undefined} // Pass onRetry only for assistant messages
                 />
             ))}
             <div ref={messagesEndRef} />

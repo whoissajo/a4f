@@ -159,7 +159,7 @@ export function useChatStreamHandler({
                 content: errorMessageToDisplay,
                 isStreaming: false,
                 isError: true,
-                errorType: 'generic', // Keep as generic for now, or introduce a new type if specific styling is needed
+                errorType: 'generic', 
                 modelId: selectedModelValue,
               }
             : msg
@@ -345,11 +345,46 @@ export function useChatStreamHandler({
       setInput, 
       setHasSubmitted, 
       setIsStreamCancelledForParent,
+      chatStatus, // Added chatStatus
   ]);
+
+  const handleRetry = useCallback(async (assistantMessageIdToRetry: string) => {
+    if (chatStatus === 'processing') {
+        toast.warning("Please wait for the current response.");
+        return;
+    }
+
+    const assistantMsgIndex = currentMessages.findIndex(msg => msg.id === assistantMessageIdToRetry);
+
+    if (assistantMsgIndex === -1 || assistantMsgIndex === 0) {
+        toast.error("Original message not found for retry.");
+        console.error("Retry: Assistant message not found or is the first message.", assistantMessageIdToRetry, currentMessages);
+        return;
+    }
+
+    const userMessageToRetry = currentMessages[assistantMsgIndex - 1];
+
+    if (!userMessageToRetry || userMessageToRetry.role !== 'user') {
+        toast.error("Could not find the user prompt to retry.");
+        console.error("Retry: Preceding user message not found.", assistantMessageIdToRetry, currentMessages);
+        return;
+    }
+
+    const promptContent = userMessageToRetry.content;
+    
+    toast.info(`Retrying prompt...`);
+    // Ensure that attachments from the original user message are considered if necessary
+    // For this implementation, handleSend uses currentAttachments from the form state.
+    // If original attachments need to be resent, that logic would be more complex.
+    await handleSend(promptContent);
+
+  }, [chatStatus, currentMessages, handleSend]);
+
 
   return {
     handleSend,
     handleStopStreaming,
+    handleRetry, // Expose handleRetry
     chatStatus,
     isStreamCancelledByUser: isStreamCancelledForParent,
     lastError,

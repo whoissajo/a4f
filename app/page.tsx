@@ -1,3 +1,4 @@
+
 "use client";
 import 'katex/dist/katex.min.css';
 import '@/styles/custom-scrollbar.css';
@@ -41,7 +42,7 @@ const HomeContent = () => {
         systemPrompt, setSystemPrompt,
         isSystemPromptVisible, setIsSystemPromptVisible,
         status,
-        handleSend, handleStopStreaming, fetchAccountInfo, resetChatState,
+        handleSend, handleStopStreaming, handleRetry, fetchAccountInfo, resetChatState, // Added handleRetry
         selectedGroup, setSelectedGroup,
         hasSubmitted, setHasSubmitted,
         isApiKeyDialogOpen, setIsApiKeyDialogOpen,
@@ -233,7 +234,12 @@ const HomeContent = () => {
                     )}
 
                     {!showCenteredForm && showChatInterface && messages.length > 0 && (
-                        <Messages messages={messages} models={availableModels} userAvatarUrl={userAvatarUrl} />
+                        <Messages 
+                            messages={messages} 
+                            models={availableModels} 
+                            userAvatarUrl={userAvatarUrl} 
+                            onRetry={handleRetry} // Pass handleRetry
+                        />
                     )}
                     {!showCenteredForm && showChatInterface && (
                         <div ref={bottomRef} data-testid="bottom-ref" className="h-20 flex-shrink-0" />
