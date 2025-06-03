@@ -1,6 +1,6 @@
 
 // components/interaction-buttons.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Copy, Check, ThumbsUp, ThumbsDown, Volume2, Download, VolumeX, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -120,7 +120,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
       }
 
       const utterance = new SpeechSynthesisUtterance(content);
-      utterance.rate = 1.5; // Set speech rate
+      utterance.rate = 1.5; // Set speech rate to 1.5x
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = (event) => {
