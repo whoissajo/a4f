@@ -1,6 +1,6 @@
 
 // components/messages.tsx
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Message } from '@/components/message';
 import { SimpleMessage, ModelUIData } from '@/lib/utils';
 import { ChevronDown } from 'lucide-react';
