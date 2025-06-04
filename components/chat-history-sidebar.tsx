@@ -20,16 +20,16 @@ interface ChatHistorySidebarProps {
   chatHistory: ChatHistoryEntry[];
   onLoadChat: (chatId: string) => void;
   onDeleteChat: (chatId: string) => void;
-  onClearAllHistory: () => void; // New prop
+  onClearAllHistory: () => void;
 }
 
-export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = React.memo(({
+export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
   isOpen,
   onOpenChange,
   chatHistory,
   onLoadChat,
   onDeleteChat,
-  onClearAllHistory, // New prop
+  onClearAllHistory,
 }) => {
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -82,7 +82,7 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = React.memo(
                     size="icon"
                     className="absolute top-1/2 right-1.5 -translate-y-1/2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                     onClick={(e) => {
-                      e.stopPropagation(); 
+                      e.stopPropagation();
                       onDeleteChat(entry.id);
                     }}
                     aria-label="Delete chat"
@@ -96,9 +96,9 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = React.memo(
         </ScrollArea>
         <div className="p-3 border-t space-y-2">
             {chatHistory.length > 0 && (
-                 <Button 
-                    variant="destructive" 
-                    size="sm" 
+                 <Button
+                    variant="destructive"
+                    size="sm"
                     className="w-full"
                     onClick={() => {
                         // Simple confirmation for now, could be a dialog later
@@ -120,6 +120,6 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = React.memo(
       </SheetContent>
     </Sheet>
   );
-});
+};
 
 ChatHistorySidebar.displayName = 'ChatHistorySidebar';
