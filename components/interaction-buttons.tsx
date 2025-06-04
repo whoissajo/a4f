@@ -8,15 +8,16 @@ import { Button } from '@/components/ui/button';
 import { SimpleMessage, cn } from '@/lib/utils';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SpeedInsightsPopoverContent } from '@/components/speed-insights-popover'; // New import
+import { SpeedInsightsPopoverContent } from '@/components/speed-insights-popover'; 
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface InteractionButtonsProps {
-  message: SimpleMessage; // Changed from messageId and content to full message object
+  message: SimpleMessage; 
   onRetry?: (assistantMessageId: string) => void;
+  isTextToSpeechFeatureEnabled: boolean; // New prop
 }
 
-export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message, onRetry }) => {
+export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message, onRetry, isTextToSpeechFeatureEnabled }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
@@ -30,7 +31,6 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
   const imageMatch = content.match(imageUrlRegex);
   const imageUrl = imageMatch ? imageMatch[1] : null;
 
-  // Load like/dislike state from localStorage on component mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedLikeState = localStorage.getItem(`message-liked-${messageId}`);
@@ -41,7 +41,6 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
     }
   }, [messageId]);
 
-  // Cleanup speech synthesis on component unmount
   useEffect(() => {
     return () => {
       if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking) {
@@ -55,7 +54,6 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
     };
   }, []);
 
-  // Handle copy functionality
   const handleCopy = async () => {
     if (!navigator.clipboard) {
       toast.error("Clipboard API not available in this browser.");
@@ -95,6 +93,10 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
   };
 
   const handleSpeaker = () => {
+    if (!isTextToSpeechFeatureEnabled) {
+        toast.info("Text-to-speech is currently disabled in settings.");
+        return;
+    }
     if (imageUrl) {
       toast.info("Text-to-speech is not available for images.");
       return;
@@ -173,7 +175,6 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
 
   return (
     <div className="flex gap-1 sm:gap-2 justify-end mt-2 mb-1">
-      {/* Speed Insights Button */}
       {typeof promptTokens !== 'undefined' && (
         isDesktop ? (
           <HoverCard openDelay={100} closeDelay={100}>
@@ -247,7 +248,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
         </Button>
       </motion.div>
 
-      {!imageUrl && (
+      {isTextToSpeechFeatureEnabled && !imageUrl && (
         <motion.div
           whileTap={{ scale: 0.85 }}
           transition={{ type: "spring", stiffness: 400, damping: 17 }}

@@ -10,10 +10,11 @@ interface MessagesProps {
     messages: SimpleMessage[];
     models?: ModelUIData[];
     userAvatarUrl?: string | null;
-    onRetry?: (assistantMessageIdToRetry: string) => void; // Added onRetry prop
+    onRetry?: (assistantMessageIdToRetry: string) => void;
+    isTextToSpeechFeatureEnabled: boolean; // New prop
 }
 
-const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUrl = null, onRetry }) => {
+const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUrl = null, onRetry, isTextToSpeechFeatureEnabled }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
@@ -78,7 +79,7 @@ const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUr
                 if (elapsed < duration) {
                     requestAnimationFrame(animateScroll);
                 } else {
-                    if (behavior === 'smooth') { // Explicit user action
+                    if (behavior === 'smooth') { 
                         setUserScrolled(false);
                     }
                 }
@@ -87,7 +88,7 @@ const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUr
         } else {
             scrollableParent.scrollTop = scrollableParent.scrollHeight;
         }
-    }, [scrollableParent]); // Added scrollableParent to dependencies
+    }, [scrollableParent]); 
 
     useEffect(() => {
         const lastMessage = messages[messages.length - 1];
@@ -142,7 +143,8 @@ const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUr
                     index={index}
                     models={models}
                     userAvatarUrl={userAvatarUrl}
-                    onRetry={message.role === 'assistant' ? onRetry : undefined} // Pass onRetry only for assistant messages
+                    onRetry={message.role === 'assistant' ? onRetry : undefined}
+                    isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                 />
             ))}
             <div ref={messagesEndRef} />

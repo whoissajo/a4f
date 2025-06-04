@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect, ReactNode, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -7,12 +8,12 @@ import useWindowSize from '../../../hooks/use-window-size';
 import { X, StopCircle, Upload, Bot as DefaultBotIcon } from 'lucide-react';
 import SystemPromptInput from '../../system-prompt-input';
 import SystemPromptIcon from '../system-prompt-icon';
-import { cn, SearchGroupId, SimpleMessage, Attachment, ModelUIData, SearchGroup } from '@/lib/utils'; // Path updated to alias
+import { cn, SearchGroupId, SimpleMessage, Attachment, ModelUIData, SearchGroup } from '@/lib/utils'; 
 
 import { MAX_IMAGES, MAX_INPUT_CHARS } from './constants';
 import { ArrowUpIcon, PaperclipIcon } from './icons';
 import { UploadingAttachment } from './types';
-import { hasVisionSupport } from './model-select/utils'; // Path corrected
+import { hasVisionSupport } from './model-select/utils'; 
 import { AttachmentPreview } from './attachments';
 import { ModelSwitcher } from './model-select';
 import { GroupSelector } from './group-select';
@@ -32,7 +33,8 @@ interface FormComponentProps {
     selectedModel: string;
     setSelectedModel: (value: string) => void;
     selectedGroup: SearchGroupId;
-    setSelectedGroup: React.Dispatch<React.SetStateAction<SearchGroupId>>;
+    onGroupSelect: (group: SearchGroup) => void; // Changed from setSelectedGroup
+    availableSearchGroups: SearchGroup[]; // New prop for filtered groups
     messages: Array<SimpleMessage>;
     status: 'ready' | 'processing' | 'error';
     setHasSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
@@ -43,6 +45,7 @@ interface FormComponentProps {
     models: ModelUIData[];
     currentPlan: 'free' | 'pro';
     onPlanChange: (plan: 'free' | 'pro') => void;
+    isTextToSpeechFeatureEnabled: boolean; // New prop
 }
 
 const FormComponent: React.FC<FormComponentProps> = ({
@@ -58,7 +61,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
     selectedModel,
     setSelectedModel,
     selectedGroup,
-    setSelectedGroup,
+    onGroupSelect, // Changed
+    availableSearchGroups, // New
     messages,
     status,
     setHasSubmitted,
@@ -69,6 +73,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
     models,
     currentPlan,
     onPlanChange,
+    isTextToSpeechFeatureEnabled, // New prop
 }) => {
     const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
     const isMounted = useRef(true);
@@ -87,7 +92,6 @@ const FormComponent: React.FC<FormComponentProps> = ({
         modelColor?: string;
     }>({ show: false, icon: null, title: '', description: '', notificationType: 'model', modelColor: 'default', visibilityTimeout: undefined });
 
-    // Add state for image mode
     const [isImageMode, setIsImageMode] = useState(selectedGroup === 'image');
     useEffect(() => { setIsImageMode(selectedGroup === 'image'); }, [selectedGroup]);
 
@@ -121,12 +125,12 @@ const FormComponent: React.FC<FormComponentProps> = ({
     const handleFocus = () => setIsFocused(true);
     const handleBlur = () => setIsFocused(false);
 
-    const handleGroupSelect = useCallback((group: SearchGroup) => {
-        setSelectedGroup(group.id);
+    const handleGroupSelectInternal = useCallback((group: SearchGroup) => {
+        onGroupSelect(group); // Call the passed handler
         inputRef.current?.focus();
         const GroupIcon = group.icon;
         showSwitchNotification(group.name, group.description, <GroupIcon className="size-4" />, undefined, 'group');
-    }, [setSelectedGroup, inputRef, showSwitchNotification]);
+    }, [onGroupSelect, inputRef, showSwitchNotification]);
 
     const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
@@ -280,7 +284,13 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                 isFocused ? "border-neutral-300! dark:border-neutral-500!" : ""
                             )}>
                                 <div className={cn("flex items-center gap-2", isMobile && "overflow-hidden")} >
-                                    <GroupSelector selectedGroup={selectedGroup} onGroupSelect={handleGroupSelect} status={status} onExpandChange={setIsGroupSelectorExpanded} />
+                                    <GroupSelector 
+                                        selectedGroup={selectedGroup} 
+                                        onGroupSelect={handleGroupSelectInternal} 
+                                        status={status} 
+                                        onExpandChange={setIsGroupSelectorExpanded}
+                                        availableGroups={availableSearchGroups}
+                                    />
                                     <div className={cn("transition-all duration-300", (isMobile && isGroupSelectorExpanded) ? "opacity-0 invisible w-0" : "opacity-100 visible w-auto")}>
                                         <ModelSwitcher
                                             selectedModel={selectedModel}
@@ -288,7 +298,6 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                             models={models}
                                             isProcessing={isProcessing}
                                             attachments={attachments}
-                                            // messages={messages} // Prop removed
                                             onModelSelect={handleModelSelect}
                                             currentPlan={currentPlan}
                                             onPlanChange={onPlanChange}
@@ -317,7 +326,6 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                     >
                                         <SystemPromptIcon size={14} />
                                     </Button>
-                                    {/* Hide attach button in image mode */}
                                     {!isImageMode && AttachButtonElement}
                                     {isProcessing ? (
                                         <Button

@@ -1,3 +1,4 @@
+
 import React, { memo } from 'react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -6,8 +7,9 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Moon, Sun, Plus, KeyRound, Settings as SettingsIcon, User, History } from 'lucide-react';
+import { Moon, Sun, Plus, KeyRound, Settings as SettingsIcon, User, History, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PageNavbarProps {
@@ -15,7 +17,9 @@ interface PageNavbarProps {
   onNewChat: () => void;
   onOpenAccountDialog: () => void;
   onOpenApiKeyDialog: () => void;
-  onToggleHistorySidebar: () => void; // New prop
+  onOpenCustomizationDialog: () => void; // New prop
+  onToggleHistorySidebar: () => void;
+  isChatHistoryFeatureEnabled: boolean; // New prop
 }
 
 /**
@@ -27,7 +31,9 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
     onNewChat,
     onOpenAccountDialog,
     onOpenApiKeyDialog,
-    onToggleHistorySidebar // New prop
+    onOpenCustomizationDialog, // New prop
+    onToggleHistorySidebar,
+    isChatHistoryFeatureEnabled, // New prop
 }) => {
   const { resolvedTheme, setTheme: setNextThemeHook } = useTheme();
 
@@ -57,16 +63,18 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
         )}
       >
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onToggleHistorySidebar}
-            className="rounded-full bg-accent hover:bg-accent/80 backdrop-blur-xs group transition-all hover:scale-105 pointer-events-auto"
-            aria-label="Toggle Chat History"
-          >
-            <History size={18} className="group-hover:scale-110 transition-all" />
-          </Button>
+          {isChatHistoryFeatureEnabled && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onToggleHistorySidebar}
+              className="rounded-full bg-accent hover:bg-accent/80 backdrop-blur-xs group transition-all hover:scale-105 pointer-events-auto"
+              aria-label="Toggle Chat History"
+            >
+              <History size={18} className="group-hover:scale-110 transition-all" />
+            </Button>
+          )}
           <Button
             type="button"
             variant={"secondary"}
@@ -100,7 +108,12 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onOpenApiKeyDialog}>
                 <KeyRound className="mr-2 h-4 w-4" />
-                <span>Edit API Key</span>
+                <span>API Keys</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onOpenCustomizationDialog}>
+                <Palette className="mr-2 h-4 w-4" />
+                <span>Customization</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

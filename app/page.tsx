@@ -11,7 +11,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
 import { ArrowDown } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-import { searchGroups } from '@/lib/utils';
+import { searchGroups as allSearchGroupsConfig, SearchGroup, SearchGroupId } from '@/lib/utils';
 import { GroupSelector } from '@/components/ui/form-component/group-select';
 import { ApiKeyNotification } from '@/components/ui/form-component/notifications';
 
@@ -21,6 +21,7 @@ import Messages from '@/components/messages';
 import { ApiKeysDialog, SimpleApiKeyInput } from '@/components/api-keys';
 import { AccountDialog } from '@/components/account-dialog';
 import { ChatHistorySidebar } from '@/components/chat-history-sidebar';
+import { CustomizationDialog } from '@/components/customization-dialog'; // New import
 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { cn } from '@/lib/utils';
@@ -49,17 +50,27 @@ const HomeContent = () => {
         isApiKeyDialogOpen, setIsApiKeyDialogOpen,
         showSimpleApiKeyInput, setShowSimpleApiKeyInput,
         isAccountDialogOpen, setIsAccountDialogOpen,
+        isCustomizationDialogOpen, setIsCustomizationDialogOpen, // For new dialog
         accountInfo,
         isAccountLoading,
         currentPlan, setCurrentPlan,
         isTavilyKeyAvailable, handleGroupSelection,
         fileInputRef, inputRef, systemPromptInputRef,
-        chatHistory, loadChatFromHistory, deleteChatFromHistory, clearAllChatHistory // Added clearAllChatHistory
+        chatHistory, loadChatFromHistory, deleteChatFromHistory, clearAllChatHistory,
+        // Customization states and functions
+        isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled,
+        enabledSearchGroupIds, 
+        isSearchGroupEnabled, // Not directly used in page.tsx, but good to have if needed
+        toggleSearchGroup,
+        isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
     const [isGroupSelectorExpanded, setIsGroupSelectorExpanded] = useState(false);
     const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
+
+    // State for customization dialog
+    // const [isCustomizationDialogOpen, setIsCustomizationDialogOpen] = useState(false); // Now from useChatLogic
 
     useEffect(() => {
       const streamingMessage = messages.find(msg => msg.isStreaming);
@@ -86,10 +97,10 @@ const HomeContent = () => {
       handleSend("What's the current date and time?");
     }, [handleSend]);
 
-    const handleGroupSelect = useCallback((group: any) => {
-      // This is just a UI notification handler, actual group selection is handled by handleGroupSelection
-      // The implementation will be added if needed
-    }, []);
+    const effectiveSearchGroups = useMemo(() => {
+        return allSearchGroupsConfig.filter(g => g.show && enabledSearchGroupIds.includes(g.id));
+    }, [enabledSearchGroupIds]);
+
 
     const showCenteredForm = messages.length === 0 && !hasSubmitted;
     const showChatInterface = isKeyLoaded && apiKey;
@@ -101,23 +112,27 @@ const HomeContent = () => {
                 onNewChat={resetChatState}
                 onOpenAccountDialog={() => setIsAccountDialogOpen(true)}
                 onOpenApiKeyDialog={() => setIsApiKeyDialogOpen(true)}
+                onOpenCustomizationDialog={() => setIsCustomizationDialogOpen(true)} // Connect to open dialog
                 onToggleHistorySidebar={() => setIsHistorySidebarOpen(prev => !prev)}
+                isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
             />
 
-            <ChatHistorySidebar
-              isOpen={isHistorySidebarOpen}
-              onOpenChange={setIsHistorySidebarOpen}
-              chatHistory={chatHistory}
-              onLoadChat={(id) => {
-                loadChatFromHistory(id);
-                setIsHistorySidebarOpen(false);
-              }}
-              onDeleteChat={deleteChatFromHistory}
-              onClearAllHistory={() => { // Pass the new handler
-                clearAllChatHistory();
-                setIsHistorySidebarOpen(false); // Optionally close sidebar
-              }}
-            />
+            {isChatHistoryFeatureEnabled && (
+                <ChatHistorySidebar
+                  isOpen={isHistorySidebarOpen}
+                  onOpenChange={setIsHistorySidebarOpen}
+                  chatHistory={chatHistory}
+                  onLoadChat={(id) => {
+                    loadChatFromHistory(id);
+                    setIsHistorySidebarOpen(false);
+                  }}
+                  onDeleteChat={deleteChatFromHistory}
+                  onClearAllHistory={() => { 
+                    clearAllChatHistory();
+                    setIsHistorySidebarOpen(false); 
+                  }}
+                />
+            )}
 
             <SimpleApiKeyInput
                 apiKey={apiKey}
@@ -134,12 +149,24 @@ const HomeContent = () => {
                 isOpen={isApiKeyDialogOpen}
                 onOpenChange={setIsApiKeyDialogOpen}
                 onSwitchToWebSearch={() => {
-                    const webGroup = searchGroups.find(g => g.id === 'web');
+                    const webGroup = allSearchGroupsConfig.find(g => g.id === 'web');
                     if (webGroup) {
-                        handleGroupSelection(webGroup, selectedGroup, setSelectedGroup);
+                        handleGroupSelection(webGroup);
                     }
                 }}
             />
+            
+            <CustomizationDialog
+                isOpen={isCustomizationDialogOpen}
+                onOpenChange={setIsCustomizationDialogOpen}
+                isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
+                onToggleChatHistoryFeature={setIsChatHistoryFeatureEnabled}
+                isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
+                onToggleTextToSpeechFeature={setIsTextToSpeechFeatureEnabled}
+                enabledSearchGroupIds={enabledSearchGroupIds}
+                onToggleSearchGroup={toggleSearchGroup}
+            />
+
 
             <div className={cn(
                 "w-full flex-1 flex flex-col items-center",
@@ -196,44 +223,19 @@ const HomeContent = () => {
                                 setIsSystemPromptVisible={setIsSystemPromptVisible}
                                 messages={messages}
                                 selectedGroup={selectedGroup}
-                                setSelectedGroup={(group) => {
-                                    if (group === 'web' && !isTavilyKeyAvailable()) {
-                                        setSelectedGroup('web');
-                                        toast.error('Tavily API key required for web search', {
-                                            description: 'Please add your Tavily API key in settings',
-                                            action: {
-                                                label: 'Add Key',
-                                                onClick: () => setIsApiKeyDialogOpen(true)
-                                            },
-                                            duration: 5000
-                                        });
-                                        setTimeout(() => {
-                                            const webButtons = document.querySelectorAll('button[data-group-id="web"]');
-                                            webButtons.forEach(button => {
-                                                button.animate(
-                                                    [
-                                                        { transform: 'translateX(0px)' },
-                                                        { transform: 'translateX(3px)' },
-                                                        { transform: 'translateX(-3px)' },
-                                                        { transform: 'translateX(2px)' },
-                                                        { transform: 'translateX(-2px)' },
-                                                        { transform: 'translateX(1px)' },
-                                                        { transform: 'translateX(0px)' }
-                                                    ],
-                                                    { duration: 400, easing: 'ease-in-out' }
-                                                );
-                                            });
-                                            setTimeout(() => {
-                                                setSelectedGroup('chat');
-                                            }, 400);
-                                        }, 100);
+                                // Pass the filtered groups to the FormComponent
+                                availableSearchGroups={effectiveSearchGroups}
+                                onGroupSelect={(group: SearchGroup) => {
+                                    if (!enabledSearchGroupIds.includes(group.id)){
+                                        toast.error(`${group.name} is currently disabled. You can enable it in Customization settings.`);
                                         return;
                                     }
-                                    setSelectedGroup(group);
+                                    handleGroupSelection(group);
                                 }}
                                 setHasSubmitted={setHasSubmitted}
                                 currentPlan={currentPlan}
                                 onPlanChange={setCurrentPlan}
+                                isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                             />
                             <DateTimeWidgets status={status} apiKey={apiKey} onDateTimeClick={handleWidgetDateTimeClick} />
                         </motion.div>
@@ -245,6 +247,7 @@ const HomeContent = () => {
                             models={availableModels}
                             userAvatarUrl={userAvatarUrl}
                             onRetry={handleRetry}
+                            isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                         />
                     )}
                     {!showCenteredForm && showChatInterface && (
@@ -311,10 +314,18 @@ const HomeContent = () => {
                             setIsSystemPromptVisible={setIsSystemPromptVisible}
                             messages={messages}
                             selectedGroup={selectedGroup}
-                            setSelectedGroup={setSelectedGroup}
+                            availableSearchGroups={effectiveSearchGroups}
+                            onGroupSelect={(group: SearchGroup) => {
+                                if (!enabledSearchGroupIds.includes(group.id)){
+                                    toast.error(`${group.name} is currently disabled. You can enable it in Customization settings.`);
+                                    return;
+                                }
+                                handleGroupSelection(group);
+                            }}
                             setHasSubmitted={setHasSubmitted}
                             currentPlan={currentPlan}
                             onPlanChange={setCurrentPlan}
+                            isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                         />
                     </motion.div>
                 )}
@@ -323,7 +334,20 @@ const HomeContent = () => {
     );
 };
 
+// Add isCustomizationDialogOpen to useChatLogic return type if it's not implicitly handled by extending
+// This part is conceptual, the actual addition is in useChatLogic itself.
+declare module '@/app/page-hooks/use-chat-logic' {
+    export function useChatLogic(): any & { // Replace 'any' with actual full return type
+        isCustomizationDialogOpen: boolean;
+        setIsCustomizationDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    };
+}
+
+
 const Home = () => {
+    // Add state for customization dialog if not managed by useChatLogic
+    // const [isCustomizationDialogOpen, setIsCustomizationDialogOpen] = useState(false); // Example
+
     return (
         <Suspense fallback={<div className="flex items-center justify-center h-screen text-lg">Loading...</div>}>
             <HomeContent />
@@ -332,4 +356,3 @@ const Home = () => {
 };
 
 export default Home;
-

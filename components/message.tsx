@@ -2,13 +2,12 @@
 // components/message.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image'; // Corrected import
+import Image from 'next/image';
 import { MarkdownRenderer } from '@/components/markdown';
 import { TextFadeAnimation } from '@/components/text-fade-animation'; 
-import { User, Bot, EyeIcon } from 'lucide-react'; // Removed unused icons
+import { User, Bot, EyeIcon } from 'lucide-react'; 
 import { cn, SimpleMessage, ModelUIData } from '@/lib/utils'; 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
-// import { Button } from '@/components/ui/button'; // No longer needed here
 import { InteractionButtons } from '@/components/interaction-buttons';
 import { ErrorMessage } from '@/components/error-message';
 import { ThinkingCardDisplay } from '@/components/thinking-card';
@@ -19,10 +18,11 @@ interface MessageProps {
     models?: ModelUIData[]; 
     userAvatarUrl?: string | null; 
     onRetry?: (assistantMessageIdToRetry: string) => void;
+    isTextToSpeechFeatureEnabled: boolean; // New prop
 }
 
 
-export const Message: React.FC<MessageProps> = ({ message, index, models = [], userAvatarUrl = null, onRetry }) => {
+export const Message: React.FC<MessageProps> = ({ message, index, models = [], userAvatarUrl = null, onRetry, isTextToSpeechFeatureEnabled }) => {
     const isUser = message.role === 'user';
     const isStreaming = message.role === 'assistant' && message.isStreaming;
     const isErrorMessage = !isUser && message.isError === true;
@@ -184,8 +184,9 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                             
                             {!isStreaming && message.content && (
                                 <InteractionButtons 
-                                    message={message} // Pass the full message object
+                                    message={message} 
                                     onRetry={onRetry}
+                                    isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                                 />
                             )}
                         </>
@@ -213,4 +214,3 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
         </motion.div>
     );
 };
-

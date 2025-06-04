@@ -5,7 +5,8 @@ import { fallbackModels } from '@/app/page-config/model-fallbacks';
 import { useApiManagement } from './chat-logic/useApiManagement';
 import { useChatCoreState } from './chat-logic/useChatCoreState';
 import { useChatStreamHandler } from './chat-logic/useChatStreamHandler';
-import type { SimpleMessage, Attachment, SearchGroupId, ChatHistoryEntry } from '@/lib/utils';
+import type { SimpleMessage, Attachment, SearchGroupId, ChatHistoryEntry, SearchGroup } from '@/lib/utils';
+import { searchGroups as allSearchGroupsConfig } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const MAX_HISTORY_LENGTH = 10;
@@ -31,7 +32,7 @@ export function useChatLogic() {
     isAccountDialogOpen, setIsAccountDialogOpen,
     currentPlan, setCurrentPlan,
     modelFetchingStatus, modelFetchingError,
-    isTavilyKeyAvailable, handleGroupSelection,
+    isTavilyKeyAvailable, handleGroupSelection: apiHandleGroupSelection,
   } = useApiManagement(selectedModel, setSelectedModel);
 
   const {
@@ -49,8 +50,31 @@ export function useChatLogic() {
   const [chatHistory, setChatHistory] = useLocalStorage<ChatHistoryEntry[]>(CHAT_HISTORY_KEY, []);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
+  // Customization States
+  const [isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled] = useLocalStorage<boolean>('a4f-chat-history-feature-enabled', true);
+  const defaultEnabledGroupIds = allSearchGroupsConfig.filter(g => g.show).map(g => g.id);
+  const [enabledSearchGroupIds, setEnabledSearchGroupIds] = useLocalStorage<SearchGroupId[]>('a4f-enabled-search-groups', defaultEnabledGroupIds);
+  const [isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled] = useLocalStorage<boolean>('a4f-tts-feature-enabled', true);
+
+  const isSearchGroupEnabled = useCallback((groupId: SearchGroupId) => {
+    return enabledSearchGroupIds.includes(groupId);
+  }, [enabledSearchGroupIds]);
+
+  const toggleSearchGroup = useCallback((groupId: SearchGroupId) => {
+    setEnabledSearchGroupIds(prev => {
+      const newEnabled = prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId];
+      // If the currently selected group is disabled, switch to 'chat' or the first available enabled group
+      if (selectedGroup === groupId && !newEnabled.includes(groupId)) {
+        const chatGroupAvailable = newEnabled.includes('chat');
+        setSelectedGroup(chatGroupAvailable ? 'chat' : (newEnabled[0] || 'chat'));
+      }
+      return newEnabled;
+    });
+  }, [selectedGroup, setSelectedGroup, setEnabledSearchGroupIds]);
+
+
   const saveOrUpdateCurrentChatInHistory = useCallback((messagesForHistory: SimpleMessage[]) => {
-    if (messagesForHistory.length === 0) return;
+    if (!isChatHistoryFeatureEnabled || messagesForHistory.length === 0) return;
 
     const cleanMessagesForHistory = messagesForHistory.filter(msg =>
         !(msg.role === 'assistant' && msg.isStreaming && !msg.content && !msg.thinkingContent)
@@ -74,10 +98,9 @@ export function useChatLogic() {
           systemPrompt,
           attachments,
         };
-        newHistory.splice(existingEntryIndex, 1); // Remove old entry
-        newHistory.unshift(entryToSave); // Add updated entry to the top
+        newHistory.splice(existingEntryIndex, 1); 
+        newHistory.unshift(entryToSave); 
       } else {
-        // Fallback: treat as new if ID not found (should ideally not happen if currentChatId is set)
         const newId = `chat-${Date.now()}`;
         setCurrentChatId(newId);
         const firstUserMessage = cleanMessagesForHistory.find(m => m.role === 'user');
@@ -100,16 +123,19 @@ export function useChatLogic() {
       newHistory.unshift(entryToSave);
     }
 
-    // Ensure history does not exceed max length
     if (newHistory.length > MAX_HISTORY_LENGTH) {
       newHistory = newHistory.slice(0, MAX_HISTORY_LENGTH);
     }
-    setChatHistory(newHistory);
+    setChatHistory(() => newHistory);
 
-  }, [currentChatId, chatHistory, selectedModel, selectedGroup, systemPrompt, attachments, setChatHistory, setCurrentChatId]);
+  }, [currentChatId, chatHistory, selectedModel, selectedGroup, systemPrompt, attachments, setChatHistory, setCurrentChatId, isChatHistoryFeatureEnabled]);
 
 
   const loadChatFromHistory = useCallback((chatId: string) => {
+    if (!isChatHistoryFeatureEnabled) {
+        toast.info("Chat history feature is currently disabled.");
+        return;
+    }
     const chatToLoad = chatHistory.find(chat => chat.id === chatId);
     if (chatToLoad) {
       setMessages(chatToLoad.messages);
@@ -122,18 +148,19 @@ export function useChatLogic() {
       setInput('');
       toast.info(`Loaded chat: "${chatToLoad.title}"`);
     }
-  }, [chatHistory, setMessages, setSelectedModel, setSelectedGroup, setSystemPrompt, setAttachments, setCurrentChatId, setHasSubmitted, setInput]);
+  }, [chatHistory, setMessages, setSelectedModel, setSelectedGroup, setSystemPrompt, setAttachments, setCurrentChatId, setHasSubmitted, setInput, isChatHistoryFeatureEnabled]);
 
   const deleteChatFromHistory = useCallback((chatId: string) => {
+    if (!isChatHistoryFeatureEnabled) return;
     setChatHistory(prevHistory => prevHistory.filter(chat => chat.id !== chatId));
     if (currentChatId === chatId) {
         setCurrentChatId(null);
-        coreResetChatState(); // Also clear the UI if deleting the active chat
+        coreResetChatState(); 
         toast.info("Active chat removed from history. New chat started.");
     } else {
         toast.info("Chat removed from history");
     }
-  }, [setChatHistory, currentChatId, setCurrentChatId, coreResetChatState]);
+  }, [setChatHistory, currentChatId, setCurrentChatId, coreResetChatState, isChatHistoryFeatureEnabled]);
 
 
   const handleNewChatSession = useCallback(() => {
@@ -143,11 +170,29 @@ export function useChatLogic() {
   }, [coreResetChatState, setCurrentChatId]);
 
   const clearAllChatHistory = useCallback(() => {
-    setChatHistory(() => []); // Use functional update to ensure new reference
+    if (!isChatHistoryFeatureEnabled) {
+        toast.info("Chat history feature is currently disabled. Enable it in settings to clear history.");
+        return;
+    }
+    setChatHistory(() => []); 
     setCurrentChatId(null);
     coreResetChatState();
     toast.success("All chat history cleared!");
-  }, [setChatHistory, setCurrentChatId, coreResetChatState]);
+  }, [setChatHistory, setCurrentChatId, coreResetChatState, isChatHistoryFeatureEnabled]);
+
+  const handleGroupSelection = useCallback((group: SearchGroup) => {
+    // This is the main group selection handler from the GroupSelector UI
+    if (!enabledSearchGroupIds.includes(group.id)) {
+        toast.error(`${group.name} group is currently disabled. You can enable it in Customization settings.`);
+        return; // Do not switch if the group is disabled
+    }
+    // Call the API key validation logic from useApiManagement
+    const selectionAllowed = apiHandleGroupSelection(group, selectedGroup, setSelectedGroup);
+    if (selectionAllowed) {
+        // If API validation passes (or isn't needed), then proceed with group selection
+        //setSelectedGroup(group.id); // This is already done by apiHandleGroupSelection if successful
+    }
+  }, [apiHandleGroupSelection, selectedGroup, setSelectedGroup, enabledSearchGroupIds]);
 
 
   const {
@@ -222,11 +267,17 @@ export function useChatLogic() {
     errorType,
     errorDetails,
     isTavilyKeyAvailable,
-    handleGroupSelection,
+    handleGroupSelection, // Expose the combined handler
     chatHistory,
     loadChatFromHistory,
     deleteChatFromHistory,
-    clearAllChatHistory, // Expose the new function
+    clearAllChatHistory,
+    
+    // Customization states and functions
+    isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled,
+    enabledSearchGroupIds,
+    isSearchGroupEnabled,
+    toggleSearchGroup,
+    isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
   };
 }
-

@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { cn, SearchGroupId, searchGroups, SearchGroup } from '../../../lib/utils';
+import { cn, SearchGroupId, SearchGroup } from '../../../lib/utils'; // Updated path
 import useWindowSize from '../../../hooks/use-window-size';
 import { toast } from 'sonner';
 
 interface GroupSelectorProps {
     selectedGroup: SearchGroupId;
-    onGroupSelect: (group: SearchGroup) => void;
+    onGroupSelect: (group: SearchGroup) => void; // Changed to pass full SearchGroup object
     status: 'ready' | 'processing' | 'error';
     onExpandChange?: React.Dispatch<React.SetStateAction<boolean>>;
+    availableGroups: SearchGroup[]; // New prop for filtered groups
 }
 
 interface ToolbarButtonProps {
@@ -19,9 +21,10 @@ interface ToolbarButtonProps {
 
 interface SelectionContentProps {
     selectedGroup: SearchGroupId;
-    onGroupSelect: (group: SearchGroup) => void;
+    onGroupSelect: (group: SearchGroup) => void; // Changed to pass full SearchGroup object
     status: 'ready' | 'processing' | 'error';
     onExpandChange?: React.Dispatch<React.SetStateAction<boolean>>;
+    availableGroups: SearchGroup[]; // New prop
 }
 
 const ToolbarButton: React.FC<ToolbarButtonProps> = ({ group, isSelected, onClick }) => {
@@ -39,18 +42,7 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({ group, isSelected, onClic
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        
-        // If this is the web button and we're trying to click it, we might need to show animation
-        if (group.id === 'web') {
-            // The parent component will handle the actual check for API key
-            // We'll just pass the click through
-            onClick();
-            
-            // The animation will be triggered by the parent if needed
-        } else {
-            // For other buttons, just handle normally
-            onClick();
-        }
+        onClick();
     };
     
     return (
@@ -69,19 +61,17 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({ group, isSelected, onClic
     );
 };
 
-const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGroupSelect, status, onExpandChange }) => {
+const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGroupSelect, status, onExpandChange, availableGroups }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const isProcessing = status === 'processing';
     const { width } = useWindowSize();
     const isMobile = width ? width < 768 : false;
 
-    // Collapse after group select on mobile
-    const handleGroupSelect = (group: SearchGroup) => {
+    const handleGroupSelectInternal = (group: SearchGroup) => {
         onGroupSelect(group);
         if (isMobile) setIsExpanded(false);
     };
 
-    // Toggle expand/collapse on mobile by tapping the selected button
     const handleToggleExpand = () => {
         if (isMobile && !isProcessing) setIsExpanded((prev) => !prev);
     };
@@ -92,10 +82,22 @@ const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGr
         }
     }, [isExpanded, onExpandChange, isMobile]);
 
-    // Only show selected group when collapsed on mobile
-    const visibleGroups = isMobile && !isExpanded
-        ? searchGroups.filter(g => g.id === selectedGroup)
-        : searchGroups.filter(g => g.show);
+    const visibleGroups = useMemo(() => {
+        if (isMobile && !isExpanded) {
+            return availableGroups.filter(g => g.id === selectedGroup);
+        }
+        return availableGroups;
+    }, [availableGroups, isMobile, isExpanded, selectedGroup]);
+
+
+    if (availableGroups.length === 0) {
+        return (
+            <div className="inline-flex items-center justify-center size-9 p-0.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs text-xs text-muted-foreground">
+                N/A
+            </div>
+        );
+    }
+
 
     return (
         <motion.div
@@ -125,9 +127,9 @@ const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGr
             onMouseLeave={() => !isMobile && !isProcessing && setIsExpanded(false)}
         >
             <AnimatePresence initial={false}>
-                {visibleGroups.map((group, index, filteredGroups) => {
+                {visibleGroups.map((group, index) => {
                     const showItem = isMobile ? true : (isExpanded && !isProcessing) || selectedGroup === group.id;
-                    const isLastItem = index === filteredGroups.length - 1;
+                    const isLastItem = index === visibleGroups.length - 1;
                     return (
                         <motion.div
                             key={group.id}
@@ -143,9 +145,9 @@ const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGr
                             <ToolbarButton
                                 group={group}
                                 isSelected={selectedGroup === group.id}
-                                onClick={() => isMobile && !isExpanded
-                                    ? handleToggleExpand() // Tap to expand on mobile
-                                    : handleGroupSelect(group)
+                                onClick={() => isMobile && !isExpanded && visibleGroups.length > 1 // Only toggle if there are other groups to show
+                                    ? handleToggleExpand() 
+                                    : handleGroupSelectInternal(group)
                                 }
                             />
                         </motion.div>
@@ -156,13 +158,14 @@ const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGr
     );
 };
 
-export const GroupSelector: React.FC<GroupSelectorProps> = ({ selectedGroup, onGroupSelect, status, onExpandChange }) => {
+export const GroupSelector: React.FC<GroupSelectorProps> = ({ selectedGroup, onGroupSelect, status, onExpandChange, availableGroups }) => {
     return (
         <SelectionContent
             selectedGroup={selectedGroup}
             onGroupSelect={onGroupSelect}
             status={status}
             onExpandChange={onExpandChange}
+            availableGroups={availableGroups}
         />
     );
 };
