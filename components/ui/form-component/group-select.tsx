@@ -83,9 +83,10 @@ const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGr
     }, [isExpanded, onExpandChange, isMobile]);
 
     const visibleGroups = useMemo(() => {
-        if (isMobile && !isExpanded) {
+        if (isMobile && !isExpanded) { // Mobile collapsed state
             return availableGroups.filter(g => g.id === selectedGroup);
         }
+        // Mobile expanded OR Desktop (any state) - show all groups passed in availableGroups
         return availableGroups;
     }, [availableGroups, isMobile, isExpanded, selectedGroup]);
 
@@ -105,10 +106,10 @@ const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGr
             initial={false}
             animate={{
                 width: isMobile
-                    ? (isExpanded ? '100%' : '38px')
-                    : (isExpanded && !isProcessing ? 'auto' : '30px'),
-                gap: isExpanded && !isProcessing ? '0.5rem' : 0,
-                paddingRight: isExpanded && !isProcessing ? '0.4rem' : 0,
+                    ? (isExpanded ? '100%' : '38px') // Mobile behavior for width
+                    : 'auto', // Desktop width is always auto to fit all enabled icons
+                gap: (isMobile && !isExpanded) ? 0 : (isExpanded && !isProcessing ? '0.5rem' : '0.25rem'), // Adjust gap: no gap for mobile collapsed, otherwise based on expansion
+                paddingRight: (isMobile && !isExpanded) ? 0 : (isExpanded && !isProcessing ? '0.4rem' : '0.2rem'), // Adjust padding similarly
             }}
             transition={{
                 duration: 0.2,
@@ -127,20 +128,16 @@ const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGr
             onMouseLeave={() => !isMobile && !isProcessing && setIsExpanded(false)}
         >
             <AnimatePresence initial={false}>
-                {visibleGroups.map((group, index) => {
-                    const showItem = isMobile ? true : (isExpanded && !isProcessing) || selectedGroup === group.id;
-                    const isLastItem = index === visibleGroups.length - 1;
+                {visibleGroups.map((group) => {
                     return (
                         <motion.div
                             key={group.id}
-                            layout={false}
+                            layout={false} // Prevent layout animations for individual items if parent is handling width
                             animate={{
-                                width: showItem ? '28px' : 0,
-                                opacity: showItem ? 1 : 0,
-                                marginRight: (showItem && isLastItem && isExpanded) ? '2px' : 0
+                                width: '28px', // Each icon container has a fixed width
+                                opacity: 1,    // Always visible if in visibleGroups
                             }}
-                            transition={{ duration: 0.15, ease: 'easeInOut' }}
-                            className={cn('m-0!', isLastItem && isExpanded && showItem ? 'pr-0.5' : '')}
+                            className={cn('m-0!')} // Parent gap handles spacing
                         >
                             <ToolbarButton
                                 group={group}
