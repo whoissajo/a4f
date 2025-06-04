@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge'; // Added import
 import { ApiKeyType, ApiKeyInfo } from '@/hooks/use-api-keys';
 import { SearchGroupId, searchGroups as allSearchGroupsConfig, cn, formatCurrency, formatRelativeTime, formatSimpleDate } from '@/lib/utils';
 import { 
@@ -368,3 +369,5 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     </Dialog>
   );
 };
+
+
