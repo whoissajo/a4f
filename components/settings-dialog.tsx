@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -263,108 +262,102 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <TabsTrigger value="customization" className="text-xs sm:text-sm data-[state=active]:shadow-sm"><Palette size={14} className="mr-1.5 hidden sm:inline"/>Customize</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="account" className="flex-1 outline-none overflow-hidden">
-            <ScrollArea className="h-full dialog-custom-scrollbar">
-              <div className="p-4 sm:p-6">
-                {isAccountLoading && !accountInfo ? renderAccountSkeleton() : accountInfo ? (
-                  <div className="space-y-4 sm:space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-5 overflow-hidden">
-                        <DashboardCard title="Account Overview" icon={<Info size={14} className="text-muted-foreground dark:text-neutral-400"/>} className="md:col-span-2" titleExtra={<span className="text-[10px] text-muted-foreground dark:text-neutral-500">Last Updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</span>}>
-                            <div className="space-y-1 text-xs"> <InfoRow label="Service" value="A4F API Services" /> <InfoRow label="Node ID" value={accInfo?.node_id} /> <InfoRow label="Account Status" value={accInfo?.is_enabled ? "Enabled" : "Disabled"} statusType={accInfo?.is_enabled ? 'active' : 'inactive'} /> <InfoRow label="Current Plan" value={formatPlanName(accInfo?.current_plan)} valueClassName="text-primary dark:text-[#80c9ff]" /> <InfoRow label="Plan Validity" value={subDetails?.effective_days_remaining !== undefined ? `${subDetails.effective_days_remaining} days left` : 'N/A'} /> </div>
-                        </DashboardCard>
-                        <DashboardCard title="" className="md:col-span-3 !p-0 overflow-hidden">
-                            <div className="flex flex-col sm:flex-row items-center h-full overflow-hidden"> <div className="p-4 pt-3 sm:p-5 flex-shrink-0"> {(accInfo?.github_info?.avatar_url && accInfo.github_info.avatar_url.trim() !== '') ? <Image src={accInfo.github_info.avatar_url} alt="Profile" width={64} height={64} className="rounded-full object-cover border-2 border-border dark:border-[oklch(0.28_0.025_240)] shadow-sm" unoptimized={true} /> : <div className="h-16 w-16 rounded-full bg-muted dark:bg-[oklch(0.17_0.025_240)] flex items-center justify-center border border-border dark:border-[oklch(0.2_0.01_240)]"><User className="h-7 w-7 text-muted-foreground dark:text-neutral-400" /></div>} </div> <div className="flex-1 p-4 pt-0 sm:pt-4 sm:p-5 sm:pl-0 text-center sm:text-left overflow-hidden"> <h3 className="text-base font-semibold text-foreground dark:text-neutral-50 break-all overflow-hidden text-ellipsis">{accInfo?.username || accInfo?.github_info?.github_username_from_auth || 'User'}</h3> {accInfo?.github_info?.email_from_auth && <p className="text-xs text-muted-foreground dark:text-neutral-300 break-all mt-0.5 overflow-hidden text-ellipsis">{accInfo.github_info.email_from_auth}</p>} <p className="text-[11px] text-muted-foreground dark:text-neutral-500 mt-1 overflow-hidden text-ellipsis">Member Since: {formatSimpleDate(subDetails?.creation_date)}</p> {accInfo?.github_info?.supabase_user_id && <div className="mt-2 text-[10px] bg-neutral-100 dark:bg-[oklch(0.17_0.015_240)] p-1.5 rounded-sm overflow-hidden"> <div className="text-muted-foreground dark:text-neutral-400">Supabase ID:</div> <div className="text-neutral-700 dark:text-neutral-200 font-mono truncate">{accInfo.github_info.supabase_user_id}</div> </div>} </div> </div>
-                        </DashboardCard>
-                    </div>
-                    <DashboardCard title="Plan Details" icon={<Tag size={14} className="text-muted-foreground dark:text-neutral-400"/>}> <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-2 text-xs overflow-hidden"> <div className="flex items-center flex-wrap"><span className="text-muted-foreground dark:text-neutral-400 mr-1.5">Current Plan:</span> <span className="font-semibold text-primary dark:text-[#80c9ff]">{formatPlanName(accInfo?.current_plan)}</span></div> <div className="flex items-center"><span className="text-muted-foreground dark:text-neutral-400 mr-1.5">Plan Validity:</span> <span className="font-semibold text-foreground dark:text-neutral-100">{subDetails?.effective_days_remaining !== undefined ? `${subDetails.effective_days_remaining} days left` : 'N/A'}</span></div> <div className="flex items-center"><span className="text-muted-foreground dark:text-neutral-400 mr-1.5">Total Payments:</span> <span className="font-semibold text-foreground dark:text-neutral-100">{formatCurrency(billingInfo?.total_amount_paid_usd, 'USD')}</span></div> <div className="flex items-center"><span className="text-muted-foreground dark:text-neutral-400 mr-1.5">Last Plan Change:</span> <span className="font-semibold text-foreground dark:text-neutral-100">{subDetails?.plan_activation_history?.length > 0 ? `${formatPlanName(subDetails.plan_activation_history[subDetails.plan_activation_history.length-1].plan)} on ${formatSimpleDate(subDetails.plan_activation_history[subDetails.plan_activation_history.length-1].activated_at)}` : 'N/A'}</span></div> </div> </DashboardCard>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 overflow-hidden">
-                        <DashboardCard title="Usage Statistics" icon={<BarChart2 size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Your recent API activity."> <div className="space-y-0.5 text-xs"> <InfoRow label="Total Requests" value={usageStats?.overall_request_counts?.total?.toLocaleString()} /> <InfoRow label="Streaming Reqs" value={`${usageStats?.overall_request_counts?.streaming_chat || 0} (${usageStats?.overall_request_counts?.streaming_chat && usageStats?.overall_request_counts?.total && usageStats?.overall_request_counts?.total > 0 ? Math.round((usageStats.overall_request_counts.streaming_chat / usageStats.overall_request_counts.total) * 100) : 0}%)`} /> <InfoRow label="Input Tokens" value={usageStats?.token_consumption?.combined_chat_tokens?.input_tokens?.toLocaleString()} /> <InfoRow label="Output Tokens" value={usageStats?.token_consumption?.combined_chat_tokens?.output_tokens?.toLocaleString()} /> <InfoRow label="Total Tokens" value={usageStats?.token_consumption?.combined_chat_tokens?.total_tokens?.toLocaleString()} /> <InfoRow label="Limits (RPM)" value={`${rateLimits?.requests_per_minute_limit || 'N/A'} RPM`} /> {(!accInfo?.current_plan || accInfo?.current_plan.toLowerCase() === 'free') && <InfoRow label="Limits (RPD)" value={`${rateLimits?.requests_per_day_limit || 'N/A'} RPD`} />} </div> </DashboardCard>
-                        <DashboardCard title="API Key Details" icon={<KeyRound size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Information about your active API key."> <div className="space-y-0.5 text-xs"> <InfoRow label="Name" value={accInfo?.api_key_name || "Primary Key"} /> <div className="flex justify-between items-center py-1 text-xs"> <span className="text-muted-foreground dark:text-neutral-400">Key Preview:</span> <div className="flex items-center gap-1.5"> <span className="font-medium text-foreground dark:text-neutral-100 font-mono">{getMaskedApiKey(accInfo?.api_key)}</span> {accInfo?.api_key && <button onClick={() => copyApiKey(accInfo?.api_key)} className="text-muted-foreground dark:text-neutral-500 hover:text-primary dark:hover:text-primary-light transition-colors">{copiedKey ? <Check size={12}/> : <Copy size={12}/>}</button>} </div> </div> <InfoRow label="Account Registered" value={subDetails?.creation_date ? formatRelativeTime(subDetails.creation_date) : "N/A"} /> <InfoRow label="Last Used" value={maxLastUsedTimestamp ? formatRelativeTime(new Date(maxLastUsedTimestamp)) : "N/A"} /> <InfoRow label="Status" value={apiKeyStatusString} statusType={apiKeyStatusType} /> </div> <Button variant="outline" size="sm" className="w-full mt-3 text-xs font-medium dark:bg-[oklch(0.17_0.025_240)] dark:border-[oklch(0.28_0.025_240)] dark:text-neutral-200 dark:hover:bg-[oklch(0.2_0.015_240)]"> <SettingsIconLucide size={12} className="mr-1.5" /> Manage API Key </Button> </DashboardCard>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 overflow-hidden mt-2">
-                        <DashboardCard title="Model Usage (Top 5 by Requests)" icon={<Layers size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Your most frequently used models."> {topModels.length > 0 ? <div className="space-y-2.5 text-xs"> {topModels.map(m => { const sr = m.r > 0 ? (m.s / m.r) * 100 : 0; return ( <div key={m.id} className="border-b border-border/30 dark:border-[oklch(0.25_0.02_240)]/40 pb-2 last:border-0 last:pb-0"> <div className="flex justify-between items-center mb-0.5"> <span className="font-medium text-foreground dark:text-neutral-100 truncate w-3/5 text-[11px] break-all" title={m.id}>{m.id}</span> <span className={cn("text-[10px] font-semibold", sr >= 75 ? "text-[var(--status-active-text-light)] dark:text-[var(--status-active-text-dark)]" : "text-[var(--status-loss-text-light)] dark:text-[var(--status-loss-text-dark)]")}>{m.s}/{m.r} reqs</span> </div> <Progress value={sr} className={cn("h-1 rounded-sm mb-1", sr >= 75 ? "[&>div]:bg-[var(--progress-success)]" : "[&>div]:bg-[var(--progress-loss)]")} /> <div className="flex justify-between items-center text-[10px] text-muted-foreground dark:text-neutral-400 mt-1"> <span>Cost: ${m.c.toFixed(8)}</span> {m.lu && <span>Used: {formatSimpleDate(m.lu)}</span>} </div> </div> ); })} </div> : <p className="text-xs text-muted-foreground dark:text-neutral-400">No model usage data available.</p>} </DashboardCard>
-                        <DashboardCard title="Usage Cost" icon={<Briefcase size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Current estimated costs."> <div className="mb-2"> <p className="text-xs text-muted-foreground dark:text-neutral-400">Est. Token Cost (USD):</p> <p className="text-2xl sm:text-3xl font-bold text-foreground dark:text-neutral-100 my-0.5">{formatCurrency(billingInfo?.cumulative_token_cost_usd, 'USD', {maximumFractionDigits: (billingInfo?.cumulative_token_cost_usd ?? 0) > 0.01 || (billingInfo?.cumulative_token_cost_usd ?? 0) === 0 ? 2 : 4})}</p> </div> {subDetails?.effective_days_remaining !== undefined && <InfoRow label={`${formatPlanName(accInfo?.current_plan)} Plan - Days left`} value={`${subDetails.effective_days_remaining} days`} valueClassName="text-xs" />} <Button variant="outline" size="sm" className="w-full mt-3 text-xs font-medium dark:bg-[oklch(0.17_0.025_240)] dark:border-[oklch(0.28_0.025_240)] dark:text-neutral-200 dark:hover:bg-[oklch(0.2_0.015_240)]"> <ExternalLink size={12} className="mr-1.5" /> View Pricing / Manage Plan </Button> <Button size="sm" className="w-full mt-1.5 text-xs a4f-gradient-button-yellow font-semibold"> <Coffee size={12} className="mr-1.5" /> Buy me a coffee </Button> </DashboardCard>
-                    </div>
+          <TabsContent value="account" className="flex-1 outline-none overflow-y-auto dialog-custom-scrollbar">
+            <div className="p-4 sm:p-6">
+              {isAccountLoading && !accountInfo ? renderAccountSkeleton() : accountInfo ? (
+                <div className="space-y-4 sm:space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-5 overflow-hidden">
+                      <DashboardCard title="Account Overview" icon={<Info size={14} className="text-muted-foreground dark:text-neutral-400"/>} className="md:col-span-2" titleExtra={<span className="text-[10px] text-muted-foreground dark:text-neutral-500">Last Updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</span>}>
+                          <div className="space-y-1 text-xs"> <InfoRow label="Service" value="A4F API Services" /> <InfoRow label="Node ID" value={accInfo?.node_id} /> <InfoRow label="Account Status" value={accInfo?.is_enabled ? "Enabled" : "Disabled"} statusType={accInfo?.is_enabled ? 'active' : 'inactive'} /> <InfoRow label="Current Plan" value={formatPlanName(accInfo?.current_plan)} valueClassName="text-primary dark:text-[#80c9ff]" /> <InfoRow label="Plan Validity" value={subDetails?.effective_days_remaining !== undefined ? `${subDetails.effective_days_remaining} days left` : 'N/A'} /> </div>
+                      </DashboardCard>
+                      <DashboardCard title="" className="md:col-span-3 !p-0 overflow-hidden">
+                          <div className="flex flex-col sm:flex-row items-center h-full overflow-hidden"> <div className="p-4 pt-3 sm:p-5 flex-shrink-0"> {(accInfo?.github_info?.avatar_url && accInfo.github_info.avatar_url.trim() !== '') ? <Image src={accInfo.github_info.avatar_url} alt="Profile" width={64} height={64} className="rounded-full object-cover border-2 border-border dark:border-[oklch(0.28_0.025_240)] shadow-sm" unoptimized={true} /> : <div className="h-16 w-16 rounded-full bg-muted dark:bg-[oklch(0.17_0.025_240)] flex items-center justify-center border border-border dark:border-[oklch(0.2_0.01_240)]"><User className="h-7 w-7 text-muted-foreground dark:text-neutral-400" /></div>} </div> <div className="flex-1 p-4 pt-0 sm:pt-4 sm:p-5 sm:pl-0 text-center sm:text-left overflow-hidden"> <h3 className="text-base font-semibold text-foreground dark:text-neutral-50 break-all overflow-hidden text-ellipsis">{accInfo?.username || accInfo?.github_info?.github_username_from_auth || 'User'}</h3> {accInfo?.github_info?.email_from_auth && <p className="text-xs text-muted-foreground dark:text-neutral-300 break-all mt-0.5 overflow-hidden text-ellipsis">{accInfo.github_info.email_from_auth}</p>} <p className="text-[11px] text-muted-foreground dark:text-neutral-500 mt-1 overflow-hidden text-ellipsis">Member Since: {formatSimpleDate(subDetails?.creation_date)}</p> {accInfo?.github_info?.supabase_user_id && <div className="mt-2 text-[10px] bg-neutral-100 dark:bg-[oklch(0.17_0.015_240)] p-1.5 rounded-sm overflow-hidden"> <div className="text-muted-foreground dark:text-neutral-400">Supabase ID:</div> <div className="text-neutral-700 dark:text-neutral-200 font-mono truncate">{accInfo.github_info.supabase_user_id}</div> </div>} </div> </div>
+                      </DashboardCard>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-6 sm:p-10 space-y-3">
-                    <AlertTriangle className="h-8 w-8 text-amber-500 mb-2" />
-                    <h3 className="text-lg sm:text-xl font-medium text-foreground dark:text-neutral-100">Account Information Unavailable</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground dark:text-neutral-400 max-w-xs">
-                      Could not fetch account details. Please ensure your API key is correct and active, or try again later.
-                    </p>
+                  <DashboardCard title="Plan Details" icon={<Tag size={14} className="text-muted-foreground dark:text-neutral-400"/>}> <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-2 text-xs overflow-hidden"> <div className="flex items-center flex-wrap"><span className="text-muted-foreground dark:text-neutral-400 mr-1.5">Current Plan:</span> <span className="font-semibold text-primary dark:text-[#80c9ff]">{formatPlanName(accInfo?.current_plan)}</span></div> <div className="flex items-center"><span className="text-muted-foreground dark:text-neutral-400 mr-1.5">Plan Validity:</span> <span className="font-semibold text-foreground dark:text-neutral-100">{subDetails?.effective_days_remaining !== undefined ? `${subDetails.effective_days_remaining} days left` : 'N/A'}</span></div> <div className="flex items-center"><span className="text-muted-foreground dark:text-neutral-400 mr-1.5">Total Payments:</span> <span className="font-semibold text-foreground dark:text-neutral-100">{formatCurrency(billingInfo?.total_amount_paid_usd, 'USD')}</span></div> <div className="flex items-center"><span className="text-muted-foreground dark:text-neutral-400 mr-1.5">Last Plan Change:</span> <span className="font-semibold text-foreground dark:text-neutral-100">{subDetails?.plan_activation_history?.length > 0 ? `${formatPlanName(subDetails.plan_activation_history[subDetails.plan_activation_history.length-1].plan)} on ${formatSimpleDate(subDetails.plan_activation_history[subDetails.plan_activation_history.length-1].activated_at)}` : 'N/A'}</span></div> </div> </DashboardCard>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 overflow-hidden">
+                      <DashboardCard title="Usage Statistics" icon={<BarChart2 size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Your recent API activity."> <div className="space-y-0.5 text-xs"> <InfoRow label="Total Requests" value={usageStats?.overall_request_counts?.total?.toLocaleString()} /> <InfoRow label="Streaming Reqs" value={`${usageStats?.overall_request_counts?.streaming_chat || 0} (${usageStats?.overall_request_counts?.streaming_chat && usageStats?.overall_request_counts?.total && usageStats?.overall_request_counts?.total > 0 ? Math.round((usageStats.overall_request_counts.streaming_chat / usageStats.overall_request_counts.total) * 100) : 0}%)`} /> <InfoRow label="Input Tokens" value={usageStats?.token_consumption?.combined_chat_tokens?.input_tokens?.toLocaleString()} /> <InfoRow label="Output Tokens" value={usageStats?.token_consumption?.combined_chat_tokens?.output_tokens?.toLocaleString()} /> <InfoRow label="Total Tokens" value={usageStats?.token_consumption?.combined_chat_tokens?.total_tokens?.toLocaleString()} /> <InfoRow label="Limits (RPM)" value={`${rateLimits?.requests_per_minute_limit || 'N/A'} RPM`} /> {(!accInfo?.current_plan || accInfo?.current_plan.toLowerCase() === 'free') && <InfoRow label="Limits (RPD)" value={`${rateLimits?.requests_per_day_limit || 'N/A'} RPD`} />} </div> </DashboardCard>
+                      <DashboardCard title="API Key Details" icon={<KeyRound size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Information about your active API key."> <div className="space-y-0.5 text-xs"> <InfoRow label="Name" value={accInfo?.api_key_name || "Primary Key"} /> <div className="flex justify-between items-center py-1 text-xs"> <span className="text-muted-foreground dark:text-neutral-400">Key Preview:</span> <div className="flex items-center gap-1.5"> <span className="font-medium text-foreground dark:text-neutral-100 font-mono">{getMaskedApiKey(accInfo?.api_key)}</span> {accInfo?.api_key && <button onClick={() => copyApiKey(accInfo?.api_key)} className="text-muted-foreground dark:text-neutral-500 hover:text-primary dark:hover:text-primary-light transition-colors">{copiedKey ? <Check size={12}/> : <Copy size={12}/>}</button>} </div> </div> <InfoRow label="Account Registered" value={subDetails?.creation_date ? formatRelativeTime(subDetails.creation_date) : "N/A"} /> <InfoRow label="Last Used" value={maxLastUsedTimestamp ? formatRelativeTime(new Date(maxLastUsedTimestamp)) : "N/A"} /> <InfoRow label="Status" value={apiKeyStatusString} statusType={apiKeyStatusType} /> </div> <Button variant="outline" size="sm" className="w-full mt-3 text-xs font-medium dark:bg-[oklch(0.17_0.025_240)] dark:border-[oklch(0.28_0.025_240)] dark:text-neutral-200 dark:hover:bg-[oklch(0.2_0.015_240)]"> <SettingsIconLucide size={12} className="mr-1.5" /> Manage API Key </Button> </DashboardCard>
                   </div>
-                )}
-              </div>
-            </ScrollArea>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 overflow-hidden mt-2">
+                      <DashboardCard title="Model Usage (Top 5 by Requests)" icon={<Layers size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Your most frequently used models."> {topModels.length > 0 ? <div className="space-y-2.5 text-xs"> {topModels.map(m => { const sr = m.r > 0 ? (m.s / m.r) * 100 : 0; return ( <div key={m.id} className="border-b border-border/30 dark:border-[oklch(0.25_0.02_240)]/40 pb-2 last:border-0 last:pb-0"> <div className="flex justify-between items-center mb-0.5"> <span className="font-medium text-foreground dark:text-neutral-100 truncate w-3/5 text-[11px] break-all" title={m.id}>{m.id}</span> <span className={cn("text-[10px] font-semibold", sr >= 75 ? "text-[var(--status-active-text-light)] dark:text-[var(--status-active-text-dark)]" : "text-[var(--status-loss-text-light)] dark:text-[var(--status-loss-text-dark)]")}>{m.s}/{m.r} reqs</span> </div> <Progress value={sr} className={cn("h-1 rounded-sm mb-1", sr >= 75 ? "[&>div]:bg-[var(--progress-success)]" : "[&>div]:bg-[var(--progress-loss)]")} /> <div className="flex justify-between items-center text-[10px] text-muted-foreground dark:text-neutral-400 mt-1"> <span>Cost: ${m.c.toFixed(8)}</span> {m.lu && <span>Used: {formatSimpleDate(m.lu)}</span>} </div> </div> ); })} </div> : <p className="text-xs text-muted-foreground dark:text-neutral-400">No model usage data available.</p>} </DashboardCard>
+                      <DashboardCard title="Usage Cost" icon={<Briefcase size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Current estimated costs."> <div className="mb-2"> <p className="text-xs text-muted-foreground dark:text-neutral-400">Est. Token Cost (USD):</p> <p className="text-2xl sm:text-3xl font-bold text-foreground dark:text-neutral-100 my-0.5">{formatCurrency(billingInfo?.cumulative_token_cost_usd, 'USD', {maximumFractionDigits: (billingInfo?.cumulative_token_cost_usd ?? 0) > 0.01 || (billingInfo?.cumulative_token_cost_usd ?? 0) === 0 ? 2 : 4})}</p> </div> {subDetails?.effective_days_remaining !== undefined && <InfoRow label={`${formatPlanName(accInfo?.current_plan)} Plan - Days left`} value={`${subDetails.effective_days_remaining} days`} valueClassName="text-xs" />} <Button variant="outline" size="sm" className="w-full mt-3 text-xs font-medium dark:bg-[oklch(0.17_0.025_240)] dark:border-[oklch(0.28_0.025_240)] dark:text-neutral-200 dark:hover:bg-[oklch(0.2_0.015_240)]"> <ExternalLink size={12} className="mr-1.5" /> View Pricing / Manage Plan </Button> <Button size="sm" className="w-full mt-1.5 text-xs a4f-gradient-button-yellow font-semibold"> <Coffee size={12} className="mr-1.5" /> Buy me a coffee </Button> </DashboardCard>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-6 sm:p-10 space-y-3">
+                  <AlertTriangle className="h-8 w-8 text-amber-500 mb-2" />
+                  <h3 className="text-lg sm:text-xl font-medium text-foreground dark:text-neutral-100">Account Information Unavailable</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground dark:text-neutral-400 max-w-xs">
+                    Could not fetch account details. Please ensure your API key is correct and active, or try again later.
+                  </p>
+                </div>
+              )}
+            </div>
           </TabsContent>
 
-          <TabsContent value="apiKeys" className="flex-1 outline-none overflow-hidden">
-            <ScrollArea className="h-full dialog-custom-scrollbar">
-              <div className="p-4 sm:p-6">
-                <Tabs defaultValue="a4f" className="w-full">
-                  <TabsList className="w-full grid grid-cols-2 mb-4">
-                    <TabsTrigger value="a4f">A4F</TabsTrigger>
-                    <TabsTrigger value="tavily">Tavily</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="a4f">
-                    <div className="space-y-2">
-                      <Label htmlFor="a4f-key-input">{apiKeys.a4f.name}</Label>
-                      <Input id="a4f-key-input" type="password" value={a4fTempKey} onChange={(e) => setA4fTempKey(e.target.value)} placeholder={apiKeys.a4f.key ? 'Enter new key to update' : `Enter your ${apiKeys.a4f.name}`} />
-                      <p className="text-xs text-muted-foreground">{apiKeys.a4f.description}. <a href={apiKeys.a4f.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get key</a>.</p>
-                      <div className="flex justify-end gap-2 pt-2">
-                        {apiKeys.a4f.key && <Button variant="destructive" size="sm" onClick={() => handleRemoveApiKey('a4f')}>Remove</Button>}
-                        <Button size="sm" onClick={() => handleSaveApiKey('a4f')} disabled={!a4fTempKey.trim()}>{apiKeys.a4f.key ? 'Update' : 'Save'}</Button>
-                      </div>
+          <TabsContent value="apiKeys" className="flex-1 outline-none overflow-y-auto dialog-custom-scrollbar">
+            <div className="p-4 sm:p-6">
+              <Tabs defaultValue="a4f" className="w-full">
+                <TabsList className="w-full grid grid-cols-2 mb-4">
+                  <TabsTrigger value="a4f">A4F</TabsTrigger>
+                  <TabsTrigger value="tavily">Tavily</TabsTrigger>
+                </TabsList>
+                <TabsContent value="a4f">
+                  <div className="space-y-2">
+                    <Label htmlFor="a4f-key-input">{apiKeys.a4f.name}</Label>
+                    <Input id="a4f-key-input" type="password" value={a4fTempKey} onChange={(e) => setA4fTempKey(e.target.value)} placeholder={apiKeys.a4f.key ? 'Enter new key to update' : `Enter your ${apiKeys.a4f.name}`} />
+                    <p className="text-xs text-muted-foreground">{apiKeys.a4f.description}. <a href={apiKeys.a4f.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get key</a>.</p>
+                    <div className="flex justify-end gap-2 pt-2">
+                      {apiKeys.a4f.key && <Button variant="destructive" size="sm" onClick={() => handleRemoveApiKey('a4f')}>Remove</Button>}
+                      <Button size="sm" onClick={() => handleSaveApiKey('a4f')} disabled={!a4fTempKey.trim()}>{apiKeys.a4f.key ? 'Update' : 'Save'}</Button>
                     </div>
-                  </TabsContent>
-                  <TabsContent value="tavily">
-                    <div className="space-y-2">
-                      <Label htmlFor="tavily-key-input">{apiKeys.tavily.name}</Label>
-                      <Input id="tavily-key-input" type="password" value={tavilyTempKey} onChange={(e) => setTavilyTempKey(e.target.value)} placeholder={apiKeys.tavily.key ? 'Enter new key to update' : `Enter your ${apiKeys.tavily.name}`} />
-                      <p className="text-xs text-muted-foreground">{apiKeys.tavily.description}. <a href={apiKeys.tavily.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get key</a>.</p>
-                      <div className="flex justify-end gap-2 pt-2">
-                        {apiKeys.tavily.key && <Button variant="destructive" size="sm" onClick={() => handleRemoveApiKey('tavily')}>Remove</Button>}
-                        <Button size="sm" onClick={() => handleSaveApiKey('tavily')} disabled={!tavilyTempKey.trim()}>{apiKeys.tavily.key ? 'Update' : 'Save'}</Button>
-                      </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="tavily">
+                  <div className="space-y-2">
+                    <Label htmlFor="tavily-key-input">{apiKeys.tavily.name}</Label>
+                    <Input id="tavily-key-input" type="password" value={tavilyTempKey} onChange={(e) => setTavilyTempKey(e.target.value)} placeholder={apiKeys.tavily.key ? 'Enter new key to update' : `Enter your ${apiKeys.tavily.name}`} />
+                    <p className="text-xs text-muted-foreground">{apiKeys.tavily.description}. <a href={apiKeys.tavily.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get key</a>.</p>
+                    <div className="flex justify-end gap-2 pt-2">
+                      {apiKeys.tavily.key && <Button variant="destructive" size="sm" onClick={() => handleRemoveApiKey('tavily')}>Remove</Button>}
+                      <Button size="sm" onClick={() => handleSaveApiKey('tavily')} disabled={!tavilyTempKey.trim()}>{apiKeys.tavily.key ? 'Update' : 'Save'}</Button>
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </ScrollArea>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
           </TabsContent>
 
-          <TabsContent value="customization" className="flex-1 outline-none overflow-hidden">
-            <ScrollArea className="h-full dialog-custom-scrollbar">
-              <div className="p-4 sm:p-6 space-y-6">
-                <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-foreground flex items-center gap-2"><Brain className="h-4 w-4 text-muted-foreground"/>Core Features</h4>
-                    <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="ch-toggle" className="text-sm cursor-pointer">Enable Chat History</Label><Switch id="ch-toggle" checked={isChatHistoryFeatureEnabled} onCheckedChange={onToggleChatHistoryFeature} /></div>
-                    <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="sp-toggle" className="text-sm cursor-pointer">Show System Prompt Button</Label><Switch id="sp-toggle" checked={isSystemPromptButtonEnabled} onCheckedChange={onToggleSystemPromptButton} /></div>
-                    <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="at-toggle" className="text-sm cursor-pointer">Show Attachment Button</Label><Switch id="at-toggle" checked={isAttachmentButtonEnabled} onCheckedChange={onToggleAttachmentButton} /></div>
-                </div>
-                <Separator />
-                <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-foreground flex items-center gap-2"><Mic className="h-4 w-4 text-muted-foreground"/>Text-to-Speech</h4>
-                    <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="tts-ftoggle" className="text-sm cursor-pointer">Enable TTS Button</Label><Switch id="tts-ftoggle" checked={isTextToSpeechFeatureEnabled} onCheckedChange={onToggleTextToSpeechFeature}/></div>
-                    {isTextToSpeechFeatureEnabled && (
-                        <div className="p-3 rounded-lg border bg-card space-y-3">
-                            <Label className="text-sm">TTS Provider</Label>
-                            <Tabs value={ttsProvider} onValueChange={(v) => onSetTtsProvider(v as 'browser' | 'elevenlabs')}><TabsList className="grid w-full grid-cols-2"><TabsTrigger value="browser"><Volume2 className="mr-1.5 h-3.5 w-3.5"/>Browser</TabsTrigger><TabsTrigger value="elevenlabs"><RadioTower className="mr-1.5 h-3.5 w-3.5"/>ElevenLabs</TabsTrigger></TabsList></Tabs>
-                            {ttsProvider === 'browser' && <div className="space-y-3 pt-2"> <div className="flex items-center justify-between"><Label htmlFor="b-tts-speed" className="text-xs">Browser TTS Speed</Label><span className="text-xs">{browserTtsSpeed.toFixed(1)}x</span></div> <Slider id="b-tts-speed" min={0.5} max={2} step={0.1} value={[browserTtsSpeed]} onValueChange={(v) => onSetBrowserTtsSpeed(v[0])} /> </div>}
-                            {ttsProvider === 'elevenlabs' && <div className="space-y-2 pt-2"> <Label htmlFor="el-key" className="text-xs">ElevenLabs API Key</Label> <Input id="el-key" type="password" value={tempElevenLabsKey} onChange={(e) => setTempElevenLabsKey(e.target.value)} placeholder="Enter ElevenLabs API Key" /> <div className="flex justify-end gap-2"><Button variant="ghost" size="sm" onClick={handleRemoveElevenLabsKey} disabled={!elevenLabsApiKey}>Remove</Button><Button size="sm" onClick={handleSaveElevenLabsKey} disabled={tempElevenLabsKey === (elevenLabsApiKey || '') || !tempElevenLabsKey.trim()}>{elevenLabsApiKey ? 'Update' : 'Save'}</Button></div> </div>}
-                        </div>
-                    )}
-                </div>
-                <Separator />
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-foreground flex items-center gap-2"><MessageSquareText className="h-4 w-4 text-muted-foreground"/>Enabled Search Groups</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {allSearchGroupsConfig.filter(g => g.show).map((group) => { const Icon = getGroupIcon(group.id); return (<div key={group.id} className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor={`sg-${group.id}`} className="flex items-center gap-2 text-sm cursor-pointer"><Icon className="h-4 w-4 text-muted-foreground"/>{group.name}</Label><Switch id={`sg-${group.id}`} checked={enabledSearchGroupIds.includes(group.id)} onCheckedChange={() => onToggleSearchGroup(group.id)}/></div>);})}
-                  </div>
+          <TabsContent value="customization" className="flex-1 outline-none overflow-y-auto dialog-custom-scrollbar">
+            <div className="p-4 sm:p-6 space-y-6">
+              <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-foreground flex items-center gap-2"><Brain className="h-4 w-4 text-muted-foreground"/>Core Features</h4>
+                  <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="ch-toggle" className="text-sm cursor-pointer">Enable Chat History</Label><Switch id="ch-toggle" checked={isChatHistoryFeatureEnabled} onCheckedChange={onToggleChatHistoryFeature} /></div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="sp-toggle" className="text-sm cursor-pointer">Show System Prompt Button</Label><Switch id="sp-toggle" checked={isSystemPromptButtonEnabled} onCheckedChange={onToggleSystemPromptButton} /></div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="at-toggle" className="text-sm cursor-pointer">Show Attachment Button</Label><Switch id="at-toggle" checked={isAttachmentButtonEnabled} onCheckedChange={onToggleAttachmentButton} /></div>
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-foreground flex items-center gap-2"><Mic className="h-4 w-4 text-muted-foreground"/>Text-to-Speech</h4>
+                  <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="tts-ftoggle" className="text-sm cursor-pointer">Enable TTS Button</Label><Switch id="tts-ftoggle" checked={isTextToSpeechFeatureEnabled} onCheckedChange={onToggleTextToSpeechFeature}/></div>
+                  {isTextToSpeechFeatureEnabled && (
+                      <div className="p-3 rounded-lg border bg-card space-y-3">
+                          <Label className="text-sm">TTS Provider</Label>
+                          <Tabs value={ttsProvider} onValueChange={(v) => onSetTtsProvider(v as 'browser' | 'elevenlabs')}><TabsList className="grid w-full grid-cols-2"><TabsTrigger value="browser"><Volume2 className="mr-1.5 h-3.5 w-3.5"/>Browser</TabsTrigger><TabsTrigger value="elevenlabs"><RadioTower className="mr-1.5 h-3.5 w-3.5"/>ElevenLabs</TabsTrigger></TabsList></Tabs>
+                          {ttsProvider === 'browser' && <div className="space-y-3 pt-2"> <div className="flex items-center justify-between"><Label htmlFor="b-tts-speed" className="text-xs">Browser TTS Speed</Label><span className="text-xs">{browserTtsSpeed.toFixed(1)}x</span></div> <Slider id="b-tts-speed" min={0.5} max={2} step={0.1} value={[browserTtsSpeed]} onValueChange={(v) => onSetBrowserTtsSpeed(v[0])} /> </div>}
+                          {ttsProvider === 'elevenlabs' && <div className="space-y-2 pt-2"> <Label htmlFor="el-key" className="text-xs">ElevenLabs API Key</Label> <Input id="el-key" type="password" value={tempElevenLabsKey} onChange={(e) => setTempElevenLabsKey(e.target.value)} placeholder="Enter ElevenLabs API Key" /> <div className="flex justify-end gap-2"><Button variant="ghost" size="sm" onClick={handleRemoveElevenLabsKey} disabled={!elevenLabsApiKey}>Remove</Button><Button size="sm" onClick={handleSaveElevenLabsKey} disabled={tempElevenLabsKey === (elevenLabsApiKey || '') || !tempElevenLabsKey.trim()}>{elevenLabsApiKey ? 'Update' : 'Save'}</Button></div> </div>}
+                      </div>
+                  )}
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-foreground flex items-center gap-2"><MessageSquareText className="h-4 w-4 text-muted-foreground"/>Enabled Search Groups</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {allSearchGroupsConfig.filter(g => g.show).map((group) => { const Icon = getGroupIcon(group.id); return (<div key={group.id} className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor={`sg-${group.id}`} className="flex items-center gap-2 text-sm cursor-pointer"><Icon className="h-4 w-4 text-muted-foreground"/>{group.name}</Label><Switch id={`sg-${group.id}`} checked={enabledSearchGroupIds.includes(group.id)} onCheckedChange={() => onToggleSearchGroup(group.id)}/></div>);})}
                 </div>
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
         
@@ -376,3 +369,5 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   );
 };
 
+
+    
