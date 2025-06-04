@@ -55,6 +55,10 @@ export function useChatLogic() {
   const defaultEnabledGroupIds = allSearchGroupsConfig.filter(g => g.show).map(g => g.id);
   const [enabledSearchGroupIds, setEnabledSearchGroupIds] = useLocalStorage<SearchGroupId[]>('a4f-enabled-search-groups', defaultEnabledGroupIds);
   const [isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled] = useLocalStorage<boolean>('a4f-tts-feature-enabled', true);
+  const [isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled] = useLocalStorage<boolean>('a4f-system-prompt-button-enabled', true);
+  const [isAttachmentButtonEnabled, setIsAttachmentButtonEnabled] = useLocalStorage<boolean>('a4f-attachment-button-enabled', true);
+  const [ttsProvider, setTtsProvider] = useLocalStorage<'browser' | 'elevenlabs'>('a4f-tts-provider', 'browser');
+  // TTS Speed and Voice states will be added later
 
   const isSearchGroupEnabled = useCallback((groupId: SearchGroupId) => {
     return enabledSearchGroupIds.includes(groupId);
@@ -63,7 +67,6 @@ export function useChatLogic() {
   const toggleSearchGroup = useCallback((groupId: SearchGroupId) => {
     setEnabledSearchGroupIds(prev => {
       const newEnabled = prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId];
-      // If the currently selected group is disabled, switch to 'chat' or the first available enabled group
       if (selectedGroup === groupId && !newEnabled.includes(groupId)) {
         const chatGroupAvailable = newEnabled.includes('chat');
         setSelectedGroup(chatGroupAvailable ? 'chat' : (newEnabled[0] || 'chat'));
@@ -85,7 +88,7 @@ export function useChatLogic() {
     let entryToSave: ChatHistoryEntry;
     let newHistory = [...chatHistory];
 
-    if (currentChatId) { // Update existing chat
+    if (currentChatId) { 
       const existingEntryIndex = newHistory.findIndex(chat => chat.id === currentChatId);
       if (existingEntryIndex !== -1) {
         const existingEntry = newHistory[existingEntryIndex];
@@ -111,7 +114,7 @@ export function useChatLogic() {
         };
         newHistory.unshift(entryToSave);
       }
-    } else { // New chat
+    } else { 
       const newId = `chat-${Date.now()}`;
       setCurrentChatId(newId);
       const firstUserMessage = cleanMessagesForHistory.find(m => m.role === 'user');
@@ -181,17 +184,11 @@ export function useChatLogic() {
   }, [setChatHistory, setCurrentChatId, coreResetChatState, isChatHistoryFeatureEnabled]);
 
   const handleGroupSelection = useCallback((group: SearchGroup) => {
-    // This is the main group selection handler from the GroupSelector UI
     if (!enabledSearchGroupIds.includes(group.id)) {
         toast.error(`${group.name} group is currently disabled. You can enable it in Customization settings.`);
-        return; // Do not switch if the group is disabled
+        return; 
     }
-    // Call the API key validation logic from useApiManagement
-    const selectionAllowed = apiHandleGroupSelection(group, selectedGroup, setSelectedGroup);
-    if (selectionAllowed) {
-        // If API validation passes (or isn't needed), then proceed with group selection
-        //setSelectedGroup(group.id); // This is already done by apiHandleGroupSelection if successful
-    }
+    apiHandleGroupSelection(group, selectedGroup, setSelectedGroup);
   }, [apiHandleGroupSelection, selectedGroup, setSelectedGroup, enabledSearchGroupIds]);
 
 
@@ -267,7 +264,7 @@ export function useChatLogic() {
     errorType,
     errorDetails,
     isTavilyKeyAvailable,
-    handleGroupSelection, // Expose the combined handler
+    handleGroupSelection, 
     chatHistory,
     loadChatFromHistory,
     deleteChatFromHistory,
@@ -279,5 +276,8 @@ export function useChatLogic() {
     isSearchGroupEnabled,
     toggleSearchGroup,
     isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
+    isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled,
+    isAttachmentButtonEnabled, setIsAttachmentButtonEnabled,
+    ttsProvider, setTtsProvider,
   };
 }

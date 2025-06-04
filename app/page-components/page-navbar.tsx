@@ -17,9 +17,9 @@ interface PageNavbarProps {
   onNewChat: () => void;
   onOpenAccountDialog: () => void;
   onOpenApiKeyDialog: () => void;
-  onOpenCustomizationDialog: () => void; // New prop
+  onOpenCustomizationDialog: () => void; 
   onToggleHistorySidebar: () => void;
-  isChatHistoryFeatureEnabled: boolean; // New prop
+  isChatHistoryFeatureEnabled: boolean; 
 }
 
 /**
@@ -31,9 +31,9 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
     onNewChat,
     onOpenAccountDialog,
     onOpenApiKeyDialog,
-    onOpenCustomizationDialog, // New prop
+    onOpenCustomizationDialog, 
     onToggleHistorySidebar,
-    isChatHistoryFeatureEnabled, // New prop
+    isChatHistoryFeatureEnabled, 
 }) => {
   const { resolvedTheme, setTheme: setNextThemeHook } = useTheme();
 

@@ -1,3 +1,4 @@
+
 // app/actions.ts
 'use server';
 
@@ -24,45 +25,74 @@ export async function suggestQuestions(history: any[]) {
   };
 }
 
-const ELEVENLABS_API_KEY = serverEnv.ELEVENLABS_API_KEY;
+const ELEVENLABS_API_KEY_SERVER = serverEnv.ELEVENLABS_API_KEY; // Renamed to avoid conflict if client key is passed
 
-export async function generateSpeech(text: string) {
+export async function generateSpeech(text: string, elevenLabsApiKeyClient?: string | null, voiceId?: string, speed?: number) {
+  'use server';
 
-  const VOICE_ID = 'JBFqnCBsd6RMkjVDRZzb' // This is the ID for the "George" voice. Replace with your preferred voice ID.
-  const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`
-  const method = 'POST'
+  const effectiveApiKey = elevenLabsApiKeyClient || ELEVENLABS_API_KEY_SERVER;
+  const effectiveVoiceId = voiceId || 'JBFqnCBsd6RMkjVDRZzb'; // Default to "George"
 
-  if (!ELEVENLABS_API_KEY) {
-    throw new Error('ELEVENLABS_API_KEY is not defined');
+  if (!effectiveApiKey) {
+    throw new Error('ElevenLabs API Key is not configured.');
   }
+
+  const url = `https://api.elevenlabs.io/v1/text-to-speech/${effectiveVoiceId}`;
+  const method = 'POST';
 
   const headers = {
     Accept: 'audio/mpeg',
-    'xi-api-key': ELEVENLABS_API_KEY,
+    'xi-api-key': effectiveApiKey,
     'Content-Type': 'application/json',
+  };
+
+  // Basic speed to voice_settings mapping (can be refined)
+  // Speed: 0.5 (slow) to 2.0 (fast), default 1.0
+  // Stability: higher for slower, lower for faster
+  // Similarity Boost: higher for slower, can be medium for faster
+  let stability = 0.5;
+  let similarity_boost = 0.5;
+
+  if (speed !== undefined) {
+    if (speed <= 0.75) { // Slower
+      stability = 0.75;
+      similarity_boost = 0.75;
+    } else if (speed > 1.25) { // Faster
+      stability = 0.3;
+      similarity_boost = 0.5; // Keep similarity reasonable
+    }
+    // Default stability/similarity for speed between 0.75 and 1.25
   }
+
 
   const data = {
     text,
-    model_id: 'eleven_turbo_v2_5',
+    model_id: 'eleven_turbo_v2_5', // or another model like 'eleven_multilingual_v2'
     voice_settings: {
-      stability: 0.5,
-      similarity_boost: 0.5,
+      stability: stability,
+      similarity_boost: similarity_boost,
+      // style: 0.5, // optional, if using models that support style_exaggeration
+      // use_speaker_boost: true // optional
     },
-  }
+  };
 
-  const body = JSON.stringify(data)
+  const body = JSON.stringify(data);
 
   const input = {
     method,
     headers,
     body,
+  };
+
+  const response = await fetch(url, input);
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error("ElevenLabs API Error:", response.status, errorBody);
+    throw new Error(`ElevenLabs API request failed with status ${response.status}: ${errorBody}`);
   }
 
-  const response = await fetch(url, input)
-
   const arrayBuffer = await response.arrayBuffer();
-
   const base64Audio = Buffer.from(arrayBuffer).toString('base64');
 
   return {
@@ -104,7 +134,7 @@ const groupTools = {
   analysis: ['code_interpreter', 'stock_chart', 'currency_converter', 'datetime'] as const,
   chat: [] as const,
   memory: ['memory_search', 'datetime'] as const,
-  image: [] as const, // <-- Add this line for image group
+  image: [] as const, 
 } as const;
 
 // Type for groupInstructions: ensure all SearchGroupId keys are present

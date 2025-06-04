@@ -4,7 +4,7 @@ import 'katex/dist/katex.min.css';
 import '@/styles/custom-scrollbar.css';
 
 import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
-import Image from 'next/image';
+import Image from 'next/image'; // Keep this import
 import { useTheme } from 'next-themes';
 
 import { AnimatePresence, motion } from 'framer-motion';
@@ -21,7 +21,7 @@ import Messages from '@/components/messages';
 import { ApiKeysDialog, SimpleApiKeyInput } from '@/components/api-keys';
 import { AccountDialog } from '@/components/account-dialog';
 import { ChatHistorySidebar } from '@/components/chat-history-sidebar';
-import { CustomizationDialog } from '@/components/customization-dialog'; // New import
+import { CustomizationDialog } from '@/components/customization-dialog'; 
 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { cn } from '@/lib/utils';
@@ -56,19 +56,18 @@ const HomeContent = () => {
         isTavilyKeyAvailable, handleGroupSelection,
         fileInputRef, inputRef, systemPromptInputRef,
         chatHistory, loadChatFromHistory, deleteChatFromHistory, clearAllChatHistory,
-        // Customization states and functions
         isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled,
         enabledSearchGroupIds, 
-        isSearchGroupEnabled, // Not directly used in page.tsx, but good to have if needed
         toggleSearchGroup,
         isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
+        isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled, // New
+        isAttachmentButtonEnabled, setIsAttachmentButtonEnabled, // New
+        ttsProvider, setTtsProvider, // New
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
     const [isGroupSelectorExpanded, setIsGroupSelectorExpanded] = useState(false);
     const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
-
-    // State for customization dialog
     const [isCustomizationDialogOpen, setIsCustomizationDialogOpen] = useState(false); 
 
     useEffect(() => {
@@ -111,7 +110,7 @@ const HomeContent = () => {
                 onNewChat={resetChatState}
                 onOpenAccountDialog={() => setIsAccountDialogOpen(true)}
                 onOpenApiKeyDialog={() => setIsApiKeyDialogOpen(true)}
-                onOpenCustomizationDialog={() => setIsCustomizationDialogOpen(true)} // Connect to open dialog
+                onOpenCustomizationDialog={() => setIsCustomizationDialogOpen(true)} 
                 onToggleHistorySidebar={() => setIsHistorySidebarOpen(prev => !prev)}
                 isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
             />
@@ -135,7 +134,7 @@ const HomeContent = () => {
 
             <SimpleApiKeyInput
                 apiKey={apiKey}
-                setApiKey={setApiKey}
+                setApiKey={setApiKey} // This should ideally call the multi-key setApiKey for 'a4f'
                 isKeyLoaded={isKeyLoaded}
                 isOpen={showSimpleApiKeyInput}
                 onOpenChange={setShowSimpleApiKeyInput}
@@ -143,7 +142,7 @@ const HomeContent = () => {
 
             <ApiKeysDialog
                 apiKeys={apiKeys}
-                setApiKey={setApiKeyByType}
+                setApiKey={setApiKeyByType} // Use this for setting specific keys
                 isKeysLoaded={isKeysLoaded}
                 isOpen={isApiKeyDialogOpen}
                 onOpenChange={setIsApiKeyDialogOpen}
@@ -164,6 +163,14 @@ const HomeContent = () => {
                 onToggleTextToSpeechFeature={setIsTextToSpeechFeatureEnabled}
                 enabledSearchGroupIds={enabledSearchGroupIds}
                 onToggleSearchGroup={toggleSearchGroup}
+                isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
+                onToggleSystemPromptButton={setIsSystemPromptButtonEnabled}
+                isAttachmentButtonEnabled={isAttachmentButtonEnabled}
+                onToggleAttachmentButton={setIsAttachmentButtonEnabled}
+                elevenLabsApiKey={apiKeys.elevenlabs.key}
+                onSetElevenLabsApiKey={(key) => setApiKeyByType('elevenlabs', key)}
+                ttsProvider={ttsProvider}
+                onSetTtsProvider={setTtsProvider}
             />
 
 
@@ -222,7 +229,6 @@ const HomeContent = () => {
                                 setIsSystemPromptVisible={setIsSystemPromptVisible}
                                 messages={messages}
                                 selectedGroup={selectedGroup}
-                                // Pass the filtered groups to the FormComponent
                                 availableSearchGroups={effectiveSearchGroups}
                                 onGroupSelect={(group: SearchGroup) => {
                                     if (!enabledSearchGroupIds.includes(group.id)){
@@ -235,6 +241,9 @@ const HomeContent = () => {
                                 currentPlan={currentPlan}
                                 onPlanChange={setCurrentPlan}
                                 isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
+                                // Pass new customization props
+                                isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
+                                isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                             />
                             <DateTimeWidgets status={status} apiKey={apiKey} onDateTimeClick={handleWidgetDateTimeClick} />
                         </motion.div>
@@ -325,6 +334,9 @@ const HomeContent = () => {
                             currentPlan={currentPlan}
                             onPlanChange={setCurrentPlan}
                             isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
+                            // Pass new customization props
+                            isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
+                            isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                         />
                     </motion.div>
                 )}
@@ -333,20 +345,7 @@ const HomeContent = () => {
     );
 };
 
-// Add isCustomizationDialogOpen to useChatLogic return type if it's not implicitly handled by extending
-// This part is conceptual, the actual addition is in useChatLogic itself.
-declare module '@/app/page-hooks/use-chat-logic' {
-    export function useChatLogic(): any & { // Replace 'any' with actual full return type
-        isCustomizationDialogOpen: boolean;
-        setIsCustomizationDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    };
-}
-
-
 const Home = () => {
-    // Add state for customization dialog if not managed by useChatLogic
-    // const [isCustomizationDialogOpen, setIsCustomizationDialogOpen] = useState(false); // Example
-
     return (
         <Suspense fallback={<div className="flex items-center justify-center h-screen text-lg">Loading...</div>}>
             <HomeContent />
@@ -355,4 +354,3 @@ const Home = () => {
 };
 
 export default Home;
-

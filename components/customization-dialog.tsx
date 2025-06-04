@@ -1,6 +1,6 @@
 
 // components/customization-dialog.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,25 +12,45 @@ import {
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { SearchGroupId, searchGroups as allSearchGroupsConfig } from '@/lib/utils'; // Ensure correct path
-import { Settings, History, MessageSquareText, Mic, Globe, Book, YoutubeIcon, Code, Bot as BuddyIcon, Image as ImageIcon } from 'lucide-react';
+import { SearchGroupId, searchGroups as allSearchGroupsConfig, ApiKeyType } from '@/lib/utils';
+import { Settings, History, MessageSquareText, Mic, Globe, Book, YoutubeIcon, Code, Bot as BuddyIcon, Image as ImageIcon, FileText, Paperclip, KeyRound, RadioTower, Volume2, Brain } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CustomizationDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  // Feature toggles
   isChatHistoryFeatureEnabled: boolean;
   onToggleChatHistoryFeature: (enabled: boolean) => void;
   isTextToSpeechFeatureEnabled: boolean;
   onToggleTextToSpeechFeature: (enabled: boolean) => void;
+  isSystemPromptButtonEnabled: boolean;
+  onToggleSystemPromptButton: (enabled: boolean) => void;
+  isAttachmentButtonEnabled: boolean;
+  onToggleAttachmentButton: (enabled: boolean) => void;
+  // Group toggles
   enabledSearchGroupIds: SearchGroupId[];
   onToggleSearchGroup: (groupId: SearchGroupId) => void;
+  // API Keys
+  elevenLabsApiKey: string | null;
+  onSetElevenLabsApiKey: (key: string | null) => void;
+  // TTS Provider
+  ttsProvider: 'browser' | 'elevenlabs';
+  onSetTtsProvider: (provider: 'browser' | 'elevenlabs') => void;
+  // TTS Settings (to be added later)
+  // ttsSpeed: number;
+  // onSetTtsSpeed: (speed: number) => void;
+  // selectedTtsVoice: string;
+  // onSetSelectedTtsVoice: (voice: string) => void;
 }
 
 const getGroupIcon = (groupId: SearchGroupId): React.ElementType => {
     const groupConfig = allSearchGroupsConfig.find(g => g.id === groupId);
-    return groupConfig?.icon || Settings; // Default icon if not found
+    return groupConfig?.icon || Settings;
 };
 
 export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
@@ -40,11 +60,30 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
   onToggleChatHistoryFeature,
   isTextToSpeechFeatureEnabled,
   onToggleTextToSpeechFeature,
+  isSystemPromptButtonEnabled,
+  onToggleSystemPromptButton,
+  isAttachmentButtonEnabled,
+  onToggleAttachmentButton,
   enabledSearchGroupIds,
   onToggleSearchGroup,
+  elevenLabsApiKey,
+  onSetElevenLabsApiKey,
+  ttsProvider,
+  onSetTtsProvider,
 }) => {
-
   const availableGroupsToCustomize = allSearchGroupsConfig.filter(g => g.show);
+  const [tempElevenLabsKey, setTempElevenLabsKey] = useState(elevenLabsApiKey || '');
+
+  const handleSaveElevenLabsKey = () => {
+    onSetElevenLabsApiKey(tempElevenLabsKey.trim() || null);
+    toast.success("ElevenLabs API Key updated.");
+  };
+  
+  const handleRemoveElevenLabsKey = () => {
+    onSetElevenLabsApiKey(null);
+    setTempElevenLabsKey('');
+    toast.info("ElevenLabs API Key removed.");
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -61,46 +100,83 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
 
         <ScrollArea className="max-h-[60vh] pr-3 -mr-3 dialog-custom-scrollbar">
           <div className="space-y-6 py-4">
-            {/* Chat History Toggle */}
+            {/* Feature Toggles Section */}
             <div className="space-y-3">
                 <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <History className="h-4 w-4 text-muted-foreground"/>
-                    Chat History
+                    <Brain className="h-4 w-4 text-muted-foreground"/>
+                    Core Features
                 </h4>
                 <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
                     <Label htmlFor="chat-history-toggle" className="text-sm text-card-foreground cursor-pointer">
                         Enable Chat History
                         <p className="text-xs text-muted-foreground mt-0.5">Save and load past conversations.</p>
                     </Label>
-                    <Switch
-                        id="chat-history-toggle"
-                        checked={isChatHistoryFeatureEnabled}
-                        onCheckedChange={onToggleChatHistoryFeature}
-                        aria-label="Toggle chat history feature"
-                    />
+                    <Switch id="chat-history-toggle" checked={isChatHistoryFeatureEnabled} onCheckedChange={onToggleChatHistoryFeature} />
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <Label htmlFor="system-prompt-toggle" className="text-sm text-card-foreground cursor-pointer">
+                        Show System Prompt Button
+                        <p className="text-xs text-muted-foreground mt-0.5">Allow setting a system-level instruction.</p>
+                    </Label>
+                    <Switch id="system-prompt-toggle" checked={isSystemPromptButtonEnabled} onCheckedChange={onToggleSystemPromptButton} />
+                </div>
+                 <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <Label htmlFor="attachment-toggle" className="text-sm text-card-foreground cursor-pointer">
+                        Show Attachment Button
+                        <p className="text-xs text-muted-foreground mt-0.5">Enable file and image attachments.</p>
+                    </Label>
+                    <Switch id="attachment-toggle" checked={isAttachmentButtonEnabled} onCheckedChange={onToggleAttachmentButton} />
                 </div>
             </div>
-
             <Separator />
 
-            {/* Text-to-Speech Toggle */}
+            {/* Text-to-Speech Section */}
              <div className="space-y-3">
                 <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
                     <Mic className="h-4 w-4 text-muted-foreground"/>
-                    Accessibility
+                    Text-to-Speech
                 </h4>
                 <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
                     <Label htmlFor="tts-toggle" className="text-sm text-card-foreground cursor-pointer">
-                        Enable Text-to-Speech
-                         <p className="text-xs text-muted-foreground mt-0.5">Allow the assistant's messages to be read aloud.</p>
+                        Enable Text-to-Speech Button
+                         <p className="text-xs text-muted-foreground mt-0.5">Allow assistant messages to be read aloud.</p>
                     </Label>
-                    <Switch
-                        id="tts-toggle"
-                        checked={isTextToSpeechFeatureEnabled}
-                        onCheckedChange={onToggleTextToSpeechFeature}
-                        aria-label="Toggle text-to-speech feature"
-                    />
+                    <Switch id="tts-toggle" checked={isTextToSpeechFeatureEnabled} onCheckedChange={onToggleTextToSpeechFeature}/>
                 </div>
+                {isTextToSpeechFeatureEnabled && (
+                    <div className="p-3 rounded-lg border bg-card space-y-3">
+                        <Label className="text-sm text-card-foreground">TTS Provider</Label>
+                        <Tabs value={ttsProvider} onValueChange={(value) => onSetTtsProvider(value as 'browser' | 'elevenlabs')}>
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="browser"><Volume2 className="mr-1.5 h-3.5 w-3.5"/>Browser</TabsTrigger>
+                                <TabsTrigger value="elevenlabs"><RadioTower className="mr-1.5 h-3.5 w-3.5"/>ElevenLabs</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                        {ttsProvider === 'elevenlabs' && (
+                            <div className="space-y-2 pt-2">
+                                <Label htmlFor="elevenlabs-api-key" className="text-xs text-muted-foreground">ElevenLabs API Key</Label>
+                                <Input
+                                    id="elevenlabs-api-key"
+                                    type="password"
+                                    value={tempElevenLabsKey}
+                                    onChange={(e) => setTempElevenLabsKey(e.target.value)}
+                                    placeholder="Enter your ElevenLabs API Key"
+                                />
+                                <div className="flex justify-end gap-2">
+                                     <Button variant="ghost" size="sm" onClick={handleRemoveElevenLabsKey} disabled={!elevenLabsApiKey}>Remove</Button>
+                                     <Button size="sm" onClick={handleSaveElevenLabsKey} disabled={tempElevenLabsKey === (elevenLabsApiKey || '') || !tempElevenLabsKey.trim()}>
+                                        {elevenLabsApiKey ? 'Update Key' : 'Save Key'}
+                                    </Button>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                    Get your API key from <a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer" className="underline">elevenlabs.io</a>.
+                                </p>
+                            </div>
+                        )}
+                        {/* Placeholder for Speed and Voice settings */}
+                        {/* <p className="text-xs text-muted-foreground text-center pt-2">Voice and speed settings coming soon.</p> */}
+                    </div>
+                )}
             </div>
             
             <Separator />
@@ -110,8 +186,8 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
               <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <MessageSquareText className="h-4 w-4 text-muted-foreground"/>
                 Enabled Search Groups
-                <p className="text-xs text-muted-foreground">(Select which search modes are available)</p>
               </h4>
+              <p className="text-xs text-muted-foreground -mt-2">Select which search modes are available in the input area.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {availableGroupsToCustomize.map((group) => {
                   const Icon = getGroupIcon(group.id);
@@ -125,7 +201,6 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
                         id={`group-toggle-${group.id}`}
                         checked={enabledSearchGroupIds.includes(group.id)}
                         onCheckedChange={() => onToggleSearchGroup(group.id)}
-                        aria-label={`Toggle ${group.name} search group`}
                       />
                     </div>
                   );

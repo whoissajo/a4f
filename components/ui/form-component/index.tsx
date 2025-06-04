@@ -33,8 +33,8 @@ interface FormComponentProps {
     selectedModel: string;
     setSelectedModel: (value: string) => void;
     selectedGroup: SearchGroupId;
-    onGroupSelect: (group: SearchGroup) => void; // Changed from setSelectedGroup
-    availableSearchGroups: SearchGroup[]; // New prop for filtered groups
+    onGroupSelect: (group: SearchGroup) => void; 
+    availableSearchGroups: SearchGroup[]; 
     messages: Array<SimpleMessage>;
     status: 'ready' | 'processing' | 'error';
     setHasSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
@@ -45,7 +45,10 @@ interface FormComponentProps {
     models: ModelUIData[];
     currentPlan: 'free' | 'pro';
     onPlanChange: (plan: 'free' | 'pro') => void;
-    isTextToSpeechFeatureEnabled: boolean; // New prop
+    isTextToSpeechFeatureEnabled: boolean; 
+    // New props for button toggles
+    isSystemPromptButtonEnabled: boolean;
+    isAttachmentButtonEnabled: boolean;
 }
 
 const FormComponent: React.FC<FormComponentProps> = ({
@@ -61,8 +64,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
     selectedModel,
     setSelectedModel,
     selectedGroup,
-    onGroupSelect, // Changed
-    availableSearchGroups, // New
+    onGroupSelect, 
+    availableSearchGroups, 
     messages,
     status,
     setHasSubmitted,
@@ -73,7 +76,9 @@ const FormComponent: React.FC<FormComponentProps> = ({
     models,
     currentPlan,
     onPlanChange,
-    isTextToSpeechFeatureEnabled, // New prop
+    isTextToSpeechFeatureEnabled, 
+    isSystemPromptButtonEnabled, // Destructure new prop
+    isAttachmentButtonEnabled, // Destructure new prop
 }) => {
     const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
     const isMounted = useRef(true);
@@ -126,7 +131,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
     const handleBlur = () => setIsFocused(false);
 
     const handleGroupSelectInternal = useCallback((group: SearchGroup) => {
-        onGroupSelect(group); // Call the passed handler
+        onGroupSelect(group); 
         inputRef.current?.focus();
         const GroupIcon = group.icon;
         showSwitchNotification(group.name, group.description, <GroupIcon className="size-4" />, undefined, 'group');
@@ -154,10 +159,10 @@ const FormComponent: React.FC<FormComponentProps> = ({
     }, [attachments.length, setAttachments, selectedModel, models]);
 
     const removeAttachment = (index: number) => { const attachmentToRemove = attachments[index]; if (attachmentToRemove.url?.startsWith('blob:')) { URL.revokeObjectURL(attachmentToRemove.url); } setAttachments(prev => prev.filter((_, i) => i !== index)); };
-    const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); if (hasVisionSupport(selectedModel, models)) setIsDragging(true); }, [selectedModel, models]);
+    const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); if (isAttachmentButtonEnabled && hasVisionSupport(selectedModel, models)) setIsDragging(true); }, [selectedModel, models, isAttachmentButtonEnabled]);
     const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }, []);
-    const handleDrop = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); if (!hasVisionSupport(selectedModel, models)) { toast.warning(`Current model does not have vision capabilities. Cannot drop attachments.`); return; } const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/')); if (files.length > 0 && attachments.length + files.length <= MAX_IMAGES) { toast.info("Attachment drop simulated (frontend only)."); const newAttachments = files.map(file => ({ name: file.name, contentType: file.type, url: URL.createObjectURL(file), size: file.size })); setAttachments(prev => [...prev, ...newAttachments]); } else if (files.length === 0) { toast.error("Only image files can be dropped."); } else { toast.error(`Max ${MAX_IMAGES} images allowed.`); } }, [attachments.length, setAttachments, selectedModel, models]);
-    const handlePaste = useCallback((e: React.ClipboardEvent) => { if (!hasVisionSupport(selectedModel, models)) return; const items = Array.from(e.clipboardData.items); const imageItems = items.filter(item => item.type.startsWith('image/')); if (imageItems.length > 0) { e.preventDefault(); if (attachments.length + imageItems.length <= MAX_IMAGES) { toast.info("Image paste simulated (frontend only)."); const files = imageItems.map(item => item.getAsFile()).filter(Boolean) as File[]; const newAttachments = files.map(file => ({ name: file.name || `Pasted Image ${Date.now()}`, contentType: file.type, url: URL.createObjectURL(file), size: file.size })); setAttachments(prev => [...prev, ...newAttachments]); } else { toast.error(`Max ${MAX_IMAGES} images allowed.`); } } }, [attachments.length, setAttachments, selectedModel, models]);
+    const handleDrop = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); if (!isAttachmentButtonEnabled) return; if (!hasVisionSupport(selectedModel, models)) { toast.warning(`Current model does not have vision capabilities. Cannot drop attachments.`); return; } const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/')); if (files.length > 0 && attachments.length + files.length <= MAX_IMAGES) { toast.info("Attachment drop simulated (frontend only)."); const newAttachments = files.map(file => ({ name: file.name, contentType: file.type, url: URL.createObjectURL(file), size: file.size })); setAttachments(prev => [...prev, ...newAttachments]); } else if (files.length === 0) { toast.error("Only image files can be dropped."); } else { toast.error(`Max ${MAX_IMAGES} images allowed.`); } }, [attachments.length, setAttachments, selectedModel, models, isAttachmentButtonEnabled]);
+    const handlePaste = useCallback((e: React.ClipboardEvent) => { if (!isAttachmentButtonEnabled || !hasVisionSupport(selectedModel, models)) return; const items = Array.from(e.clipboardData.items); const imageItems = items.filter(item => item.type.startsWith('image/')); if (imageItems.length > 0) { e.preventDefault(); if (attachments.length + imageItems.length <= MAX_IMAGES) { toast.info("Image paste simulated (frontend only)."); const files = imageItems.map(item => item.getAsFile()).filter(Boolean) as File[]; const newAttachments = files.map(file => ({ name: file.name || `Pasted Image ${Date.now()}`, contentType: file.type, url: URL.createObjectURL(file), size: file.size })); setAttachments(prev => [...prev, ...newAttachments]); } else { toast.error(`Max ${MAX_IMAGES} images allowed.`); } } }, [attachments.length, setAttachments, selectedModel, models, isAttachmentButtonEnabled]);
 
     const triggerFileInput = useCallback(() => {
         fileInputRef.current?.click();
@@ -253,26 +258,28 @@ const FormComponent: React.FC<FormComponentProps> = ({
                     className={cn(
                         "relative w-full flex flex-col gap-1 rounded-lg transition-all duration-300 font-sans!",
                         hasInteracted ? "z-50" : "",
-                        isDragging && currentModelSupportsVision && "ring-1 ring-neutral-300 dark:ring-neutral-700",
+                        isDragging && isAttachmentButtonEnabled && currentModelSupportsVision && "ring-1 ring-neutral-300 dark:ring-neutral-700",
                         attachments.length > 0 || uploadQueue.length > 0
                             ? "bg-gray-100/70 dark:bg-neutral-800/80 p-1"
                             : "bg-transparent"
                     )}
                     onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} >
-                    <AnimatePresence> {isDragging && currentModelSupportsVision && (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 backdrop-blur-[2px] bg-background/80 dark:bg-neutral-900/80 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 flex items-center justify-center z-50 m-2 pointer-events-none"> <div className="flex items-center gap-4 px-6 py-8"> <div className="p-3 rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-xs"> <Upload className="h-6 w-6 text-neutral-600 dark:text-neutral-400" /> </div> <div className="space-y-1 text-center"> <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Drop images here</p> <p className="text-xs text-neutral-500 dark:text-neutral-500">Max {MAX_IMAGES} images</p> </div> </div> </motion.div>)} </AnimatePresence>
+                    <AnimatePresence> {isDragging && isAttachmentButtonEnabled && currentModelSupportsVision && (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 backdrop-blur-[2px] bg-background/80 dark:bg-neutral-900/80 rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 flex items-center justify-center z-50 m-2 pointer-events-none"> <div className="flex items-center gap-4 px-6 py-8"> <div className="p-3 rounded-full bg-neutral-100 dark:bg-neutral-800 shadow-xs"> <Upload className="h-6 w-6 text-neutral-600 dark:text-neutral-400" /> </div> <div className="space-y-1 text-center"> <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Drop images here</p> <p className="text-xs text-neutral-500 dark:text-neutral-500">Max {MAX_IMAGES} images</p> </div> </div> </motion.div>)} </AnimatePresence>
                     <input type="file" className="hidden" ref={fileInputRef} multiple onChange={handleFileChange} accept="image/*" tabIndex={-1} />
                     {(attachments.length > 0 || uploadQueue.length > 0) && (<div className="flex flex-row gap-2 overflow-x-auto py-2 max-h-28 z-10 px-1 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent"> {attachments.map((attachment, index) => (<AttachmentPreview key={attachment.url || `local-${index}`} attachment={attachment} onRemove={() => removeAttachment(index)} isUploading={false} />))} {uploadQueue.map((filename) => (<AttachmentPreview key={filename} attachment={{ name: filename } as UploadingAttachment} onRemove={() => { }} isUploading={true} />))} </div>)}
 
                     <div className="relative">
                         <SwitchNotification icon={switchNotification.icon} title={switchNotification.title} description={switchNotification.description} isVisible={switchNotification.show} modelColor={switchNotification.modelColor} notificationType={switchNotification.notificationType} />
 
-                        <SystemPromptInput
-                            systemPrompt={systemPrompt}
-                            onSystemPromptChange={setSystemPrompt}
-                            isVisible={isSystemPromptVisible}
-                            isProcessing={status === 'processing'}
-                            inputRef={systemPromptInputRef}
-                        />
+                        {isSystemPromptButtonEnabled && (
+                            <SystemPromptInput
+                                systemPrompt={systemPrompt}
+                                onSystemPromptChange={setSystemPrompt}
+                                isVisible={isSystemPromptVisible}
+                                isProcessing={status === 'processing'}
+                                inputRef={systemPromptInputRef}
+                            />
+                        )}
 
                         <div className="relative rounded-lg bg-neutral-100 dark:bg-neutral-900">
                             <Textarea ref={inputRef} placeholder={hasInteracted ? "Ask a new question..." : "Ask anything..."} value={input} onChange={handleInput} disabled={isProcessing} onFocus={handleFocus} onBlur={handleBlur} className={cn("w-full rounded-lg resize-none md:text-base!", "text-base leading-relaxed", "bg-neutral-100 dark:bg-neutral-900", "border border-neutral-200! dark:border-neutral-700!", "focus:border-neutral-300! dark:!focus:!border-neutral-500", isFocused ? "border-neutral-300! dark:border-neutral-500!" : "", "text-neutral-900 dark:text-neutral-100", "focus:ring-0!", "px-4 py-4 pb-16", "touch-manipulation", "whatsize")} rows={1} autoFocus={!isMobile && !hasInteracted} onCompositionStart={() => isCompositionActive.current = true} onCompositionEnd={() => isCompositionActive.current = false} onKeyDown={handleKeyDown} onPaste={handlePaste} />
@@ -306,27 +313,29 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2" >
-                                    <Button
-                                        type="button"
-                                        className={cn(
-                                            "rounded-full p-1.5 h-8 w-8 bg-white dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600",
-                                            isSystemPromptVisible && "bg-neutral-200 dark:bg-neutral-600"
-                                        )}
-                                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                            e.preventDefault();
-                                            setIsSystemPromptVisible(!isSystemPromptVisible);
-                                            if (!isSystemPromptVisible && systemPromptInputRef?.current) {
-                                                setTimeout(() => systemPromptInputRef.current?.focus(), 300);
-                                            }
-                                        }}
-                                        variant="outline"
-                                        disabled={isProcessing}
-                                        aria-label="Toggle System Prompt"
-                                        title="System Prompt"
-                                    >
-                                        <SystemPromptIcon size={14} />
-                                    </Button>
-                                    {!isImageMode && AttachButtonElement}
+                                    {isSystemPromptButtonEnabled && (
+                                        <Button
+                                            type="button"
+                                            className={cn(
+                                                "rounded-full p-1.5 h-8 w-8 bg-white dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600",
+                                                isSystemPromptVisible && "bg-neutral-200 dark:bg-neutral-600"
+                                            )}
+                                            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                                e.preventDefault();
+                                                setIsSystemPromptVisible(!isSystemPromptVisible);
+                                                if (!isSystemPromptVisible && systemPromptInputRef?.current) {
+                                                    setTimeout(() => systemPromptInputRef.current?.focus(), 300);
+                                                }
+                                            }}
+                                            variant="outline"
+                                            disabled={isProcessing}
+                                            aria-label="Toggle System Prompt"
+                                            title="System Prompt"
+                                        >
+                                            <SystemPromptIcon size={14} />
+                                        </Button>
+                                    )}
+                                    {!isImageMode && isAttachmentButtonEnabled && AttachButtonElement}
                                     {isProcessing ? (
                                         <Button
                                             type="button"
