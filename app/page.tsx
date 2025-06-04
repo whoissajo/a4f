@@ -20,6 +20,7 @@ import FormComponent from '@/components/ui/form-component';
 import Messages from '@/components/messages';
 import { ApiKeysDialog, SimpleApiKeyInput } from '@/components/api-keys';
 import { AccountDialog } from '@/components/account-dialog';
+import { ChatHistorySidebar } from '@/components/chat-history-sidebar'; // New import
 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { cn } from '@/lib/utils';
@@ -42,7 +43,7 @@ const HomeContent = () => {
         systemPrompt, setSystemPrompt,
         isSystemPromptVisible, setIsSystemPromptVisible,
         status,
-        handleSend, handleStopStreaming, handleRetry, fetchAccountInfo, resetChatState, // Added handleRetry
+        handleSend, handleStopStreaming, handleRetry, fetchAccountInfo, resetChatState,
         selectedGroup, setSelectedGroup,
         hasSubmitted, setHasSubmitted,
         isApiKeyDialogOpen, setIsApiKeyDialogOpen,
@@ -52,11 +53,14 @@ const HomeContent = () => {
         isAccountLoading,
         currentPlan, setCurrentPlan,
         isTavilyKeyAvailable, handleGroupSelection,
-        fileInputRef, inputRef, systemPromptInputRef
+        fileInputRef, inputRef, systemPromptInputRef,
+        chatHistory, loadChatFromHistory, deleteChatFromHistory // New state and functions from useChatLogic
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
     const [isGroupSelectorExpanded, setIsGroupSelectorExpanded] = useState(false);
+    const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false); // State for history sidebar
+
     useEffect(() => {
       const streamingMessage = messages.find(msg => msg.isStreaming);
       setIsStreamingState(!!streamingMessage);
@@ -81,7 +85,7 @@ const HomeContent = () => {
     const handleWidgetDateTimeClick = useCallback(() => {
       handleSend("What's the current date and time?");
     }, [handleSend]);
-    
+
     const handleGroupSelect = useCallback((group: any) => {
       // This is just a UI notification handler, actual group selection is handled by handleGroupSelection
       // The implementation will be added if needed
@@ -94,9 +98,21 @@ const HomeContent = () => {
         <div className="flex flex-col font-sans items-center min-h-screen bg-background text-foreground transition-colors duration-500">
             <PageNavbar
                 hasMessages={messages.length > 0 || hasSubmitted}
-                onNewChat={resetChatState}
+                onNewChat={resetChatState} // This now calls handleNewChatSession from useChatLogic
                 onOpenAccountDialog={() => setIsAccountDialogOpen(true)}
                 onOpenApiKeyDialog={() => setIsApiKeyDialogOpen(true)}
+                onToggleHistorySidebar={() => setIsHistorySidebarOpen(prev => !prev)} // New prop
+            />
+
+            <ChatHistorySidebar
+              isOpen={isHistorySidebarOpen}
+              onOpenChange={setIsHistorySidebarOpen}
+              chatHistory={chatHistory}
+              onLoadChat={(id) => {
+                loadChatFromHistory(id);
+                setIsHistorySidebarOpen(false); // Close sidebar after loading
+              }}
+              onDeleteChat={deleteChatFromHistory}
             />
 
             {/* Simple API key input for first-time users */}
@@ -107,7 +123,7 @@ const HomeContent = () => {
                 isOpen={showSimpleApiKeyInput}
                 onOpenChange={setShowSimpleApiKeyInput}
             />
-            
+
             {/* Advanced API keys management dialog */}
             <ApiKeysDialog
                 apiKeys={apiKeys}
@@ -183,7 +199,7 @@ const HomeContent = () => {
                                     if (group === 'web' && !isTavilyKeyAvailable()) {
                                         // Briefly set to web to show a visual indication
                                         setSelectedGroup('web');
-                                        
+
                                         // Show a toast notification
                                         toast.error('Tavily API key required for web search', {
                                             description: 'Please add your Tavily API key in settings',
@@ -193,7 +209,7 @@ const HomeContent = () => {
                                             },
                                             duration: 5000
                                         });
-                                        
+
                                         // After a brief delay, switch back to chat
                                         setTimeout(() => {
                                             // Find all web toggle buttons and add a subtle shake animation
@@ -212,16 +228,16 @@ const HomeContent = () => {
                                                     { duration: 400, easing: 'ease-in-out' }
                                                 );
                                             });
-                                            
+
                                             // Switch back to chat after the animation
                                             setTimeout(() => {
                                                 setSelectedGroup('chat');
                                             }, 400);
                                         }, 100);
-                                        
+
                                         return;
                                     }
-                                    
+
                                     // If we have the necessary API key, proceed with the selection
                                     setSelectedGroup(group);
                                 }}
@@ -234,10 +250,10 @@ const HomeContent = () => {
                     )}
 
                     {!showCenteredForm && showChatInterface && messages.length > 0 && (
-                        <Messages 
-                            messages={messages} 
-                            models={availableModels} 
-                            userAvatarUrl={userAvatarUrl} 
+                        <Messages
+                            messages={messages}
+                            models={availableModels}
+                            userAvatarUrl={userAvatarUrl}
                             onRetry={handleRetry} // Pass handleRetry
                         />
                     )}
@@ -254,7 +270,7 @@ const HomeContent = () => {
                 isLoading={isAccountLoading}
                 onRefresh={fetchAccountInfo}
             />
-            
+
             {/* No external animation component needed */}
 
             <AnimatePresence>

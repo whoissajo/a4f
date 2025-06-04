@@ -7,7 +7,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Moon, Sun, Plus, KeyRound, Settings as SettingsIcon, User } from 'lucide-react';
+import { Moon, Sun, Plus, KeyRound, Settings as SettingsIcon, User, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PageNavbarProps {
@@ -15,6 +15,7 @@ interface PageNavbarProps {
   onNewChat: () => void;
   onOpenAccountDialog: () => void;
   onOpenApiKeyDialog: () => void;
+  onToggleHistorySidebar: () => void; // New prop
 }
 
 /**
@@ -25,7 +26,8 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
     hasMessages,
     onNewChat,
     onOpenAccountDialog,
-    onOpenApiKeyDialog
+    onOpenApiKeyDialog,
+    onToggleHistorySidebar // New prop
 }) => {
   const { resolvedTheme, setTheme: setNextThemeHook } = useTheme();
 
@@ -54,7 +56,17 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
           "transition-colors duration-300"
         )}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onToggleHistorySidebar}
+            className="rounded-full bg-accent hover:bg-accent/80 backdrop-blur-xs group transition-all hover:scale-105 pointer-events-auto"
+            aria-label="Toggle Chat History"
+          >
+            <History size={18} className="group-hover:scale-110 transition-all" />
+          </Button>
           <Button
             type="button"
             variant={"secondary"}

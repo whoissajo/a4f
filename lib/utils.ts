@@ -188,14 +188,14 @@ export function formatRelativeTime(dateInput?: string | number | Date): string {
   let date: Date;
   if (typeof dateInput === 'string') {
     // Attempt to parse common non-ISO format by replacing space with 'T'
-    const isoAttempt = dateInput.includes(" ") && !dateInput.includes("T") 
+    const isoAttempt = dateInput.includes(" ") && !dateInput.includes("T")
         ? dateInput.replace(" ", "T") + (dateInput.endsWith("Z") ? "" : "Z") // Add Z if not present for UTC assumption
         : dateInput;
     date = new Date(isoAttempt);
   } else {
     date = new Date(dateInput);
   }
-  
+
   if (isNaN(date.getTime())) {
     console.warn(`formatRelativeTime: Invalid date input received: ${dateInput}`);
     return "N/A"; // Or "Invalid Date"
@@ -222,11 +222,11 @@ export function formatRelativeTime(dateInput?: string | number | Date): string {
 
 export function formatSimpleDate(dateInput?: string | number | Date): string {
   if (!dateInput) return "N/A";
-  
+
   let date: Date;
   if (typeof dateInput === 'string') {
     // Attempt to parse common non-ISO format by replacing space with 'T'
-    const isoAttempt = dateInput.includes(" ") && !dateInput.includes("T") 
+    const isoAttempt = dateInput.includes(" ") && !dateInput.includes("T")
         ? dateInput.replace(" ", "T") + (dateInput.endsWith("Z") ? "" : "Z") // Add Z if not present for UTC assumption
         : dateInput;
     date = new Date(isoAttempt);
@@ -247,4 +247,15 @@ export function formatSimpleDate(dateInput?: string | number | Date): string {
     console.warn(`formatSimpleDate: Error formatting date: ${e}`);
     return "Invalid Date";
   }
+}
+
+export interface ChatHistoryEntry {
+  id: string;
+  title: string;
+  timestamp: number;
+  messages: SimpleMessage[];
+  selectedModel: string;
+  selectedGroup: SearchGroupId;
+  systemPrompt: string;
+  attachments?: Attachment[]; // Optional, if you want to save attachments
 }
