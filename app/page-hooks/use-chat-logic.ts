@@ -42,39 +42,69 @@ export function useChatLogic() {
     hasSubmitted, setHasSubmitted,
     systemPrompt, setSystemPrompt,
     isSystemPromptVisible, setIsSystemPromptVisible,
-    resetChatState: coreResetChatState, // Renamed to avoid conflict
+    resetChatState: coreResetChatState,
     fileInputRef, inputRef, systemPromptInputRef,
   } = useChatCoreState();
 
   const [chatHistory, setChatHistory] = useLocalStorage<ChatHistoryEntry[]>(CHAT_HISTORY_KEY, []);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
-  const saveChatToHistory = useCallback(() => {
-    if (messages.length === 0 || (messages.length === 1 && messages[0].role === 'assistant' && messages[0].isError)) {
-      return; // Don't save empty or error-only chats
-    }
+  const saveOrUpdateCurrentChatInHistory = useCallback((messagesForHistory: SimpleMessage[]) => {
+    if (messagesForHistory.length === 0) return;
 
-    const firstUserMessage = messages.find(m => m.role === 'user');
-    const title = firstUserMessage?.content.substring(0, 50) || "Untitled Chat";
-    const newEntry: ChatHistoryEntry = {
-      id: `chat-${Date.now()}`,
-      title,
-      timestamp: Date.now(),
-      messages,
-      selectedModel,
-      selectedGroup,
-      systemPrompt,
-      attachments, // Save attachments as well
-    };
+    // Filter out assistant placeholders that have no content and are still streaming
+    // This prevents saving empty assistant messages during initial send
+    const cleanMessagesForHistory = messagesForHistory.filter(msg => 
+        !(msg.role === 'assistant' && msg.isStreaming && !msg.content && !msg.thinkingContent)
+    );
 
-    setChatHistory(prevHistory => {
-      const updatedHistory = [newEntry, ...prevHistory];
-      if (updatedHistory.length > MAX_HISTORY_LENGTH) {
-        return updatedHistory.slice(0, MAX_HISTORY_LENGTH);
+    if (cleanMessagesForHistory.length === 0) return;
+
+
+    let entryToSave: ChatHistoryEntry;
+
+    if (currentChatId) { // Update existing chat
+      const existingEntry = chatHistory.find(chat => chat.id === currentChatId);
+      if (existingEntry) {
+        entryToSave = {
+          ...existingEntry,
+          messages: cleanMessagesForHistory,
+          timestamp: Date.now(),
+          // Potentially update model/group if they can change mid-chat, though unlikely
+          selectedModel,
+          selectedGroup,
+          systemPrompt,
+          attachments,
+        };
+        setChatHistory(prev => [entryToSave, ...prev.filter(chat => chat.id !== currentChatId)]);
+      } else {
+        // Should not happen if currentChatId is set, but as a fallback, treat as new
+        const newId = `chat-${Date.now()}`;
+        setCurrentChatId(newId);
+        const firstUserMessage = cleanMessagesForHistory.find(m => m.role === 'user');
+        const title = firstUserMessage?.content.substring(0, 50) || "Untitled Chat";
+        entryToSave = {
+          id: newId, title, timestamp: Date.now(), messages: cleanMessagesForHistory,
+          selectedModel, selectedGroup, systemPrompt, attachments,
+        };
+        setChatHistory(prev => [entryToSave, ...prev.slice(0, MAX_HISTORY_LENGTH - 1)]);
       }
-      return updatedHistory;
-    });
-    toast.success("Chat saved to history");
-  }, [messages, selectedModel, selectedGroup, systemPrompt, attachments, setChatHistory]);
+    } else { // New chat
+      const newId = `chat-${Date.now()}`;
+      setCurrentChatId(newId);
+      const firstUserMessage = cleanMessagesForHistory.find(m => m.role === 'user');
+      const title = firstUserMessage?.content.substring(0, 50) || "Untitled Chat";
+      entryToSave = {
+        id: newId, title, timestamp: Date.now(), messages: cleanMessagesForHistory,
+        selectedModel, selectedGroup, systemPrompt, attachments,
+      };
+      setChatHistory(prev => {
+        const newHistory = [entryToSave, ...prev];
+        return newHistory.length > MAX_HISTORY_LENGTH ? newHistory.slice(0, MAX_HISTORY_LENGTH) : newHistory;
+      });
+    }
+  }, [currentChatId, chatHistory, selectedModel, selectedGroup, systemPrompt, attachments, setChatHistory, setCurrentChatId]);
+
 
   const loadChatFromHistory = useCallback((chatId: string) => {
     const chatToLoad = chatHistory.find(chat => chat.id === chatId);
@@ -84,28 +114,33 @@ export function useChatLogic() {
       setSelectedGroup(chatToLoad.selectedGroup);
       setSystemPrompt(chatToLoad.systemPrompt);
       setAttachments(chatToLoad.attachments || []);
+      setCurrentChatId(chatToLoad.id); // Set the loaded chat as the current one
       setHasSubmitted(true);
-      setInput(''); // Clear current input
+      setInput('');
       toast.info(`Loaded chat: "${chatToLoad.title}"`);
     }
-  }, [chatHistory, setMessages, setSelectedModel, setSelectedGroup, setSystemPrompt, setAttachments, setHasSubmitted, setInput]);
+  }, [chatHistory, setMessages, setSelectedModel, setSelectedGroup, setSystemPrompt, setAttachments, setCurrentChatId, setHasSubmitted, setInput]);
 
   const deleteChatFromHistory = useCallback((chatId: string) => {
     setChatHistory(prevHistory => prevHistory.filter(chat => chat.id !== chatId));
+    if (currentChatId === chatId) {
+        setCurrentChatId(null); // If deleting the active chat, reset currentChatId
+    }
     toast.info("Chat removed from history");
-  }, [setChatHistory]);
+  }, [setChatHistory, currentChatId, setCurrentChatId]);
 
 
   const handleNewChatSession = useCallback(() => {
-    if (messages.length > 0) { // Only save if there are actual messages
-      saveChatToHistory();
-    }
-    coreResetChatState(); // Call the original reset state function
-  }, [messages, saveChatToHistory, coreResetChatState]);
+    setCurrentChatId(null); // Signal that the next interaction starts a new chat
+    coreResetChatState();
+    toast.info("New chat session started");
+  }, [coreResetChatState, setCurrentChatId]);
 
 
   const {
-    handleSend, handleStopStreaming, handleRetry,
+    handleSend: streamHandlerSend, // Renamed to avoid conflict
+    handleStopStreaming, 
+    handleRetry,
     chatStatus,
     isStreamCancelledByUser,
     lastError: chatLastError,
@@ -122,7 +157,15 @@ export function useChatLogic() {
     setMessages,
     setInput,
     setHasSubmitted,
+    onMessagesUpdatedForHistory: saveOrUpdateCurrentChatInHistory, // Pass the callback
   });
+
+  // UI calls this handleSend
+  const handleSend = useCallback(async (messageContent: string) => {
+    await streamHandlerSend(messageContent);
+    // saveOrUpdateCurrentChatInHistory is now called by streamHandlerSend via onMessagesUpdatedForHistory
+  }, [streamHandlerSend]);
+
 
   // Derive overall status
   const [overallStatus, setOverallStatus] = useState<'ready' | 'processing' | 'error'>('ready');
@@ -143,60 +186,37 @@ export function useChatLogic() {
 
 
   return {
-    // Original API key for backward compatibility
     apiKey, setApiKey, isKeyLoaded,
-
-    // New multi-API key system
     apiKeys, setApiKeyByType, isKeysLoaded,
-
-    // Models and selections
     availableModels,
     selectedModel, setSelectedModel,
-
-    // Chat state
     messages, setMessages,
     input, setInput,
     attachments, setAttachments,
     systemPrompt, setSystemPrompt,
     isSystemPromptVisible, setIsSystemPromptVisible,
     status: overallStatus,
-
-    // Chat actions
-    handleSend, handleStopStreaming, handleRetry, fetchAccountInfo, 
-    resetChatState: handleNewChatSession, // Renamed to handleNewChatSession for clarity
-
-    // Group selection
+    handleSend, // This is the one UI calls
+    handleStopStreaming, handleRetry, fetchAccountInfo, 
+    resetChatState: handleNewChatSession,
     selectedGroup, setSelectedGroup,
-
-    // UI state
     hasSubmitted, setHasSubmitted,
-
-    // Dialog states
     isApiKeyDialogOpen, setIsApiKeyDialogOpen,
     showSimpleApiKeyInput, setShowSimpleApiKeyInput,
     isAccountDialogOpen, setIsAccountDialogOpen,
-
-    // Account info
     accountInfo,
     isAccountLoading,
     currentPlan, setCurrentPlan,
-
-    // Refs
     fileInputRef, inputRef, systemPromptInputRef,
-
-    // Stream and error handling
     isStreamCancelledByUser,
     lastError,
     errorType,
     errorDetails,
-
-    // API key helpers
     isTavilyKeyAvailable,
     handleGroupSelection,
-
-    // Chat History
     chatHistory,
     loadChatFromHistory,
     deleteChatFromHistory,
   };
 }
+

@@ -24,6 +24,7 @@ interface UseChatStreamHandlerProps {
     setMessages: React.Dispatch<React.SetStateAction<SimpleMessage[]>>;
     setInput: (input: string) => void;
     setHasSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
+    onMessagesUpdatedForHistory: (updatedMessages: SimpleMessage[]) => void; // Callback to trigger history save/update
 }
 
 /**
@@ -41,6 +42,7 @@ export function useChatStreamHandler({
     setMessages,
     setInput,
     setHasSubmitted,
+    onMessagesUpdatedForHistory, // New callback
 }: UseChatStreamHandlerProps) {
   const [chatStatus, setChatStatus] = useState<'ready' | 'processing' | 'error'>('ready');
   const internalIsStreamCancelledByUserRef = useRef(false);
@@ -86,7 +88,6 @@ export function useChatStreamHandler({
         content: prompt,
         createdAt: new Date(),
       };
-      setMessages(prevMessages => [...prevMessages, newUserMessage]);
       const assistantMessageId = `assistant-${Date.now()}-${Math.random()}`;
       currentAssistantMessageId.current = assistantMessageId;
       const assistantPlaceholder: SimpleMessage = {
@@ -98,7 +99,11 @@ export function useChatStreamHandler({
         modelId: selectedModelValue,
         isError: false,
       };
-      setMessages(prev => [...prev, assistantPlaceholder]);
+      
+      const updatedMessagesForUi = [...currentMessages, newUserMessage, assistantPlaceholder];
+      setMessages(updatedMessagesForUi);
+      onMessagesUpdatedForHistory(updatedMessagesForUi); // Trigger history update
+
       setInput('');
       if (currentMessages.length === 0) setHasSubmitted(true);
       try {
@@ -133,37 +138,44 @@ export function useChatStreamHandler({
         const data = await response.json();
         const imageUrl = data?.data?.[0]?.url;
         
-        setMessages(prev => prev.map(msg =>
-          msg.id === assistantMessageId
-            ? {
-                ...msg,
-                content: imageUrl ? `![Generated Image](${imageUrl})` : 'No image URL returned by API.',
-                isStreaming: false,
-                modelId: selectedModelValue,
-              }
-            : msg
-        ));
+        setMessages(prev => {
+            const finalMessages = prev.map(msg =>
+              msg.id === assistantMessageId
+                ? {
+                    ...msg,
+                    content: imageUrl ? `![Generated Image](${imageUrl})` : 'No image URL returned by API.',
+                    isStreaming: false,
+                    modelId: selectedModelValue,
+                  }
+                : msg
+            );
+            onMessagesUpdatedForHistory(finalMessages); // Update history with final image result
+            return finalMessages;
+        });
       } catch (error: any) {
         console.error("Image generation API error:", error);
         let errorMessageToDisplay = error.message || 'Image generation failed due to an unknown error.';
         
-        // Check if it's a 400 error, often due to incompatible model for image generation
         if (error.message && typeof error.message === 'string' && error.message.includes('status 400')) {
             errorMessageToDisplay = `Please select an image generation model. ${errorMessageToDisplay}`;
         }
         
-        setMessages(prev => prev.map(msg =>
-          msg.id === assistantMessageId
-            ? {
-                ...msg,
-                content: errorMessageToDisplay,
-                isStreaming: false,
-                isError: true,
-                errorType: 'generic', 
-                modelId: selectedModelValue,
-              }
-            : msg
-        ));
+        setMessages(prev => {
+            const errorMessages = prev.map(msg =>
+              msg.id === assistantMessageId
+                ? {
+                    ...msg,
+                    content: errorMessageToDisplay,
+                    isStreaming: false,
+                    isError: true,
+                    errorType: 'generic', 
+                    modelId: selectedModelValue,
+                  }
+                : msg
+            );
+            onMessagesUpdatedForHistory(errorMessages); // Update history with error message
+            return errorMessages;
+        });
         setLastError(errorMessageToDisplay);
         setErrorType('generic');
       } finally {
@@ -216,6 +228,7 @@ export function useChatStreamHandler({
         });
     }
     
+    // Prepare messages for API payload from currentMessages + new user message
     [...currentMessages, newUserMessage]
         .filter(msg => msg.role === 'user' || msg.role === 'assistant')
         .forEach(msg => {
@@ -234,8 +247,6 @@ export function useChatStreamHandler({
             }
         });
 
-    setMessages(prevMessages => [...prevMessages, newUserMessage]);
-
     const assistantMessageId = `assistant-${Date.now()}-${Math.random()}`;
     currentAssistantMessageId.current = assistantMessageId;
     const assistantPlaceholder: SimpleMessage = {
@@ -247,7 +258,11 @@ export function useChatStreamHandler({
         modelId: selectedModelValue,
         isError: false,
     };
-    setMessages(prev => [...prev, assistantPlaceholder]);
+
+    // Update UI and trigger history save with user message and assistant placeholder
+    const updatedMessagesForUi = [...currentMessages, newUserMessage, assistantPlaceholder];
+    setMessages(updatedMessagesForUi);
+    onMessagesUpdatedForHistory(updatedMessagesForUi);
 
     setInput('');
     if (currentMessages.length === 0) setHasSubmitted(true);
@@ -274,11 +289,12 @@ export function useChatStreamHandler({
           thinkTagProcessed
         } = await processStreamChunks({
           stream,
-          setMessages,
+          setMessages, // This will update the messages in real-time for UI
           currentAssistantMessageIdRef: currentAssistantMessageId,
           isStreamCancelledByUserRef: internalIsStreamCancelledByUserRef,
         });
 
+        // After stream processing, update history with the final assistant message state
         const finalMessageIdToUpdate = currentAssistantMessageId.current;
         if (finalMessageIdToUpdate) {
             let finalContentForDisplay = finalContent;
@@ -295,9 +311,9 @@ export function useChatStreamHandler({
                 messageIsError = true;
                 messageErrorTypeValue = 'empty-stream';
             }
-
-            setMessages(prev =>
-                prev.map((msg: SimpleMessage) =>
+            
+            setMessages(prev => {
+                 const finalMessagesState = prev.map((msg: SimpleMessage) =>
                     msg.id === finalMessageIdToUpdate
                         ? {
                             ...msg,
@@ -313,20 +329,27 @@ export function useChatStreamHandler({
                             isInterrupted: wasCancelled,
                           }
                         : msg
-                )
-            );
+                );
+                onMessagesUpdatedForHistory(finalMessagesState); // Final update for history
+                return finalMessagesState;
+            });
         }
         currentAssistantMessageId.current = null;
 
     } catch (error: any) {
         handleStreamError({
             error,
-            setMessages,
+            setMessages, // This updates UI
             currentAssistantMessageIdRef: currentAssistantMessageId,
             selectedModelValue,
             setLastError,
             setErrorType,
             setErrorDetails,
+        });
+        // After error handling updates messages state, propagate this to history
+        setMessages(prev => {
+            onMessagesUpdatedForHistory(prev);
+            return prev;
         });
         toast.error(lastError || 'An unexpected error occurred while processing your request.');
         currentAssistantMessageId.current = null;
@@ -345,7 +368,8 @@ export function useChatStreamHandler({
       setInput, 
       setHasSubmitted, 
       setIsStreamCancelledForParent,
-      chatStatus, // Added chatStatus
+      chatStatus,
+      onMessagesUpdatedForHistory, // Added dependency
   ]);
 
   const handleRetry = useCallback(async (assistantMessageIdToRetry: string) => {
@@ -372,19 +396,21 @@ export function useChatStreamHandler({
 
     const promptContent = userMessageToRetry.content;
     
+    // Remove the failed assistant message and subsequent messages before retrying
+    const messagesBeforeRetry = currentMessages.slice(0, assistantMsgIndex);
+    setMessages(messagesBeforeRetry); // Update UI state first
+    // The history will be updated when the new message sequence is sent via handleSend
+
     toast.info(`Retrying prompt...`);
-    // Ensure that attachments from the original user message are considered if necessary
-    // For this implementation, handleSend uses currentAttachments from the form state.
-    // If original attachments need to be resent, that logic would be more complex.
     await handleSend(promptContent);
 
-  }, [chatStatus, currentMessages, handleSend]);
+  }, [chatStatus, currentMessages, handleSend, setMessages]);
 
 
   return {
     handleSend,
     handleStopStreaming,
-    handleRetry, // Expose handleRetry
+    handleRetry,
     chatStatus,
     isStreamCancelledByUser: isStreamCancelledForParent,
     lastError,
