@@ -60,9 +60,10 @@ const HomeContent = () => {
         enabledSearchGroupIds, 
         toggleSearchGroup,
         isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
-        isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled, // New
-        isAttachmentButtonEnabled, setIsAttachmentButtonEnabled, // New
-        ttsProvider, setTtsProvider, // New
+        isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled, 
+        isAttachmentButtonEnabled, setIsAttachmentButtonEnabled, 
+        ttsProvider, setTtsProvider, 
+        browserTtsSpeed, setBrowserTtsSpeed,
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
@@ -134,7 +135,7 @@ const HomeContent = () => {
 
             <SimpleApiKeyInput
                 apiKey={apiKey}
-                setApiKey={setApiKey} // This should ideally call the multi-key setApiKey for 'a4f'
+                setApiKey={setApiKey} 
                 isKeyLoaded={isKeyLoaded}
                 isOpen={showSimpleApiKeyInput}
                 onOpenChange={setShowSimpleApiKeyInput}
@@ -142,7 +143,7 @@ const HomeContent = () => {
 
             <ApiKeysDialog
                 apiKeys={apiKeys}
-                setApiKey={setApiKeyByType} // Use this for setting specific keys
+                setApiKey={setApiKeyByType} 
                 isKeysLoaded={isKeysLoaded}
                 isOpen={isApiKeyDialogOpen}
                 onOpenChange={setIsApiKeyDialogOpen}
@@ -171,6 +172,8 @@ const HomeContent = () => {
                 onSetElevenLabsApiKey={(key) => setApiKeyByType('elevenlabs', key)}
                 ttsProvider={ttsProvider}
                 onSetTtsProvider={setTtsProvider}
+                browserTtsSpeed={browserTtsSpeed}
+                onSetBrowserTtsSpeed={setBrowserTtsSpeed}
             />
 
 
@@ -241,7 +244,6 @@ const HomeContent = () => {
                                 currentPlan={currentPlan}
                                 onPlanChange={setCurrentPlan}
                                 isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
-                                // Pass new customization props
                                 isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
                                 isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                             />
@@ -256,6 +258,7 @@ const HomeContent = () => {
                             userAvatarUrl={userAvatarUrl}
                             onRetry={handleRetry}
                             isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
+                            browserTtsSpeed={browserTtsSpeed}
                         />
                     )}
                     {!showCenteredForm && showChatInterface && (
@@ -334,7 +337,6 @@ const HomeContent = () => {
                             currentPlan={currentPlan}
                             onPlanChange={setCurrentPlan}
                             isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
-                            // Pass new customization props
                             isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
                             isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                         />
@@ -354,3 +356,4 @@ const Home = () => {
 };
 
 export default Home;
+

@@ -11,10 +11,18 @@ interface MessagesProps {
     models?: ModelUIData[];
     userAvatarUrl?: string | null;
     onRetry?: (assistantMessageIdToRetry: string) => void;
-    isTextToSpeechFeatureEnabled: boolean; // New prop
+    isTextToSpeechFeatureEnabled: boolean;
+    browserTtsSpeed: number; // New prop
 }
 
-const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUrl = null, onRetry, isTextToSpeechFeatureEnabled }) => {
+const Messages: React.FC<MessagesProps> = ({ 
+    messages, 
+    models = [], 
+    userAvatarUrl = null, 
+    onRetry, 
+    isTextToSpeechFeatureEnabled,
+    browserTtsSpeed
+}) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
@@ -145,6 +153,7 @@ const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUr
                     userAvatarUrl={userAvatarUrl}
                     onRetry={message.role === 'assistant' ? onRetry : undefined}
                     isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
+                    browserTtsSpeed={browserTtsSpeed}
                 />
             ))}
             <div ref={messagesEndRef} />
@@ -168,3 +177,4 @@ const Messages: React.FC<MessagesProps> = ({ messages, models = [], userAvatarUr
 };
 
 export default Messages;
+

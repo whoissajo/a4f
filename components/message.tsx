@@ -18,11 +18,20 @@ interface MessageProps {
     models?: ModelUIData[]; 
     userAvatarUrl?: string | null; 
     onRetry?: (assistantMessageIdToRetry: string) => void;
-    isTextToSpeechFeatureEnabled: boolean; // New prop
+    isTextToSpeechFeatureEnabled: boolean;
+    browserTtsSpeed: number; // New prop
 }
 
 
-export const Message: React.FC<MessageProps> = ({ message, index, models = [], userAvatarUrl = null, onRetry, isTextToSpeechFeatureEnabled }) => {
+export const Message: React.FC<MessageProps> = ({ 
+    message, 
+    index, 
+    models = [], 
+    userAvatarUrl = null, 
+    onRetry, 
+    isTextToSpeechFeatureEnabled,
+    browserTtsSpeed 
+}) => {
     const isUser = message.role === 'user';
     const isStreaming = message.role === 'assistant' && message.isStreaming;
     const isErrorMessage = !isUser && message.isError === true;
@@ -187,6 +196,7 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                                     message={message} 
                                     onRetry={onRetry}
                                     isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
+                                    browserTtsSpeed={browserTtsSpeed}
                                 />
                             )}
                         </>
@@ -214,3 +224,4 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
         </motion.div>
     );
 };
+

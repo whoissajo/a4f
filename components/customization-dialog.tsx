@@ -16,8 +16,9 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
 import { SearchGroupId, searchGroups as allSearchGroupsConfig, ApiKeyType } from '@/lib/utils';
-import { Settings, History, MessageSquareText, Mic, Globe, Book, YoutubeIcon, Code, Bot as BuddyIcon, Image as ImageIcon, FileText, Paperclip, KeyRound, RadioTower, Volume2, Brain } from 'lucide-react';
+import { Settings, History, MessageSquareText, Mic, Globe, Book, YoutubeIcon, Code, Bot as BuddyIcon, Image as ImageIcon, FileText, Paperclip, KeyRound, RadioTower, Volume2, Brain, Gauge } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CustomizationDialogProps {
@@ -41,11 +42,15 @@ interface CustomizationDialogProps {
   // TTS Provider
   ttsProvider: 'browser' | 'elevenlabs';
   onSetTtsProvider: (provider: 'browser' | 'elevenlabs') => void;
-  // TTS Settings (to be added later)
-  // ttsSpeed: number;
-  // onSetTtsSpeed: (speed: number) => void;
-  // selectedTtsVoice: string;
-  // onSetSelectedTtsVoice: (voice: string) => void;
+  // Browser TTS Settings
+  browserTtsSpeed: number;
+  onSetBrowserTtsSpeed: (speed: number) => void;
+  // selectedBrowserTtsVoice: string;
+  // onSetSelectedBrowserTtsVoice: (voiceURI: string) => void;
+  // elevenLabsTtsSpeed: number;
+  // onSetElevenLabsTtsSpeed: (speed: number) => void;
+  // selectedElevenLabsVoiceId: string;
+  // onSetSelectedElevenLabsVoiceId: (voiceId: string) => void;
 }
 
 const getGroupIcon = (groupId: SearchGroupId): React.ElementType => {
@@ -70,6 +75,8 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
   onSetElevenLabsApiKey,
   ttsProvider,
   onSetTtsProvider,
+  browserTtsSpeed,
+  onSetBrowserTtsSpeed,
 }) => {
   const availableGroupsToCustomize = allSearchGroupsConfig.filter(g => g.show);
   const [tempElevenLabsKey, setTempElevenLabsKey] = useState(elevenLabsApiKey || '');
@@ -152,6 +159,27 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
                                 <TabsTrigger value="elevenlabs"><RadioTower className="mr-1.5 h-3.5 w-3.5"/>ElevenLabs</TabsTrigger>
                             </TabsList>
                         </Tabs>
+
+                        {ttsProvider === 'browser' && (
+                            <div className="space-y-3 pt-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="browser-tts-speed" className="text-xs text-muted-foreground">Browser TTS Speed</Label>
+                                    <span className="text-xs text-foreground font-medium">{browserTtsSpeed.toFixed(1)}x</span>
+                                </div>
+                                <Slider
+                                    id="browser-tts-speed"
+                                    min={0.5}
+                                    max={2}
+                                    step={0.1}
+                                    value={[browserTtsSpeed]}
+                                    onValueChange={(value) => onSetBrowserTtsSpeed(value[0])}
+                                />
+                                <p className="text-[10px] text-muted-foreground">
+                                    Adjust the playback speed for browser-based text-to-speech. Voice selection uses browser/OS defaults.
+                                </p>
+                            </div>
+                        )}
+
                         {ttsProvider === 'elevenlabs' && (
                             <div className="space-y-2 pt-2">
                                 <Label htmlFor="elevenlabs-api-key" className="text-xs text-muted-foreground">ElevenLabs API Key</Label>
@@ -170,11 +198,10 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
                                 </div>
                                 <p className="text-[10px] text-muted-foreground">
                                     Get your API key from <a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer" className="underline">elevenlabs.io</a>.
+                                    Voice and speed settings for ElevenLabs coming soon.
                                 </p>
                             </div>
                         )}
-                        {/* Placeholder for Speed and Voice settings */}
-                        {/* <p className="text-xs text-muted-foreground text-center pt-2">Voice and speed settings coming soon.</p> */}
                     </div>
                 )}
             </div>
@@ -219,3 +246,4 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
     </Dialog>
   );
 };
+

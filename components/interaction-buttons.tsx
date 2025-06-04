@@ -14,10 +14,17 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 interface InteractionButtonsProps {
   message: SimpleMessage; 
   onRetry?: (assistantMessageId: string) => void;
-  isTextToSpeechFeatureEnabled: boolean; // New prop
+  isTextToSpeechFeatureEnabled: boolean;
+  browserTtsSpeed: number; // New prop for browser TTS speed
+  // Add ttsProvider and elevenLabsApiKey/voiceId later if needed for ElevenLabs
 }
 
-export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message, onRetry, isTextToSpeechFeatureEnabled }) => {
+export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ 
+  message, 
+  onRetry, 
+  isTextToSpeechFeatureEnabled,
+  browserTtsSpeed 
+}) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
@@ -102,15 +109,17 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
       return;
     }
 
+    // For now, this always uses browser TTS. Will be updated to use ttsProvider.
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
         setIsSpeaking(false);
-        if (isSpeaking) return; 
+        if (isSpeaking) return; // If it was speaking and we cancelled, don't immediately restart
       }
 
       const utterance = new SpeechSynthesisUtterance(content);
-      utterance.rate = 1.5; 
+      utterance.rate = browserTtsSpeed; // Use the speed from props
+      // utterance.voice = selectedVoice; // Voice selection to be added later
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = (event) => {
@@ -137,10 +146,10 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
       link.href = localUrl;
       
       let filename = decodeURIComponent(imageUrl.substring(imageUrl.lastIndexOf('/') + 1));
-      filename = filename.split('?')[0];
+      filename = filename.split('?')[0]; // Remove query params from filename
 
-      if (!filename || !filename.includes('.')) {
-        const extension = blob.type.split('/')[1] || 'png';
+      if (!filename || !filename.includes('.')) { // Basic check for extension
+        const extension = blob.type.split('/')[1] || 'png'; // Fallback extension
         filename = `image-${messageId}.${extension}`;
       }
       link.download = filename;
@@ -148,7 +157,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(localUrl);
+      URL.revokeObjectURL(localUrl); // Clean up blob URL
       toast.success("Image download started");
     } catch (err: any) {
       console.error('Failed to download image:', err);
@@ -193,7 +202,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
         )
       )}
 
-      {onRetry && (isError || content) && (
+      {onRetry && (isError || content) && ( // Show retry if it's an error OR if there's content (allows retrying successful but perhaps unsatisfactory responses)
         <motion.div
             whileTap={{ scale: 0.85 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -303,3 +312,4 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message,
     </div>
   );
 };
+

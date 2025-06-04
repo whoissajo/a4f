@@ -58,7 +58,8 @@ export function useChatLogic() {
   const [isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled] = useLocalStorage<boolean>('a4f-system-prompt-button-enabled', true);
   const [isAttachmentButtonEnabled, setIsAttachmentButtonEnabled] = useLocalStorage<boolean>('a4f-attachment-button-enabled', true);
   const [ttsProvider, setTtsProvider] = useLocalStorage<'browser' | 'elevenlabs'>('a4f-tts-provider', 'browser');
-  // TTS Speed and Voice states will be added later
+  const [browserTtsSpeed, setBrowserTtsSpeed] = useLocalStorage<number>('a4f-browser-tts-speed', 1.0);
+  // TTS Voice states will be added later
 
   const isSearchGroupEnabled = useCallback((groupId: SearchGroupId) => {
     return enabledSearchGroupIds.includes(groupId);
@@ -279,5 +280,7 @@ export function useChatLogic() {
     isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled,
     isAttachmentButtonEnabled, setIsAttachmentButtonEnabled,
     ttsProvider, setTtsProvider,
+    browserTtsSpeed, setBrowserTtsSpeed,
   };
 }
+
