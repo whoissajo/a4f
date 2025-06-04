@@ -52,33 +52,32 @@ export function useChatLogic() {
   const saveOrUpdateCurrentChatInHistory = useCallback((messagesForHistory: SimpleMessage[]) => {
     if (messagesForHistory.length === 0) return;
 
-    // Filter out assistant placeholders that have no content and are still streaming
-    // This prevents saving empty assistant messages during initial send
-    const cleanMessagesForHistory = messagesForHistory.filter(msg => 
+    const cleanMessagesForHistory = messagesForHistory.filter(msg =>
         !(msg.role === 'assistant' && msg.isStreaming && !msg.content && !msg.thinkingContent)
     );
 
     if (cleanMessagesForHistory.length === 0) return;
 
-
     let entryToSave: ChatHistoryEntry;
+    let newHistory = [...chatHistory];
 
     if (currentChatId) { // Update existing chat
-      const existingEntry = chatHistory.find(chat => chat.id === currentChatId);
-      if (existingEntry) {
+      const existingEntryIndex = newHistory.findIndex(chat => chat.id === currentChatId);
+      if (existingEntryIndex !== -1) {
+        const existingEntry = newHistory[existingEntryIndex];
         entryToSave = {
           ...existingEntry,
           messages: cleanMessagesForHistory,
           timestamp: Date.now(),
-          // Potentially update model/group if they can change mid-chat, though unlikely
           selectedModel,
           selectedGroup,
           systemPrompt,
           attachments,
         };
-        setChatHistory(prev => [entryToSave, ...prev.filter(chat => chat.id !== currentChatId)]);
+        newHistory.splice(existingEntryIndex, 1); // Remove old entry
+        newHistory.unshift(entryToSave); // Add updated entry to the top
       } else {
-        // Should not happen if currentChatId is set, but as a fallback, treat as new
+        // Fallback: treat as new if ID not found (should ideally not happen if currentChatId is set)
         const newId = `chat-${Date.now()}`;
         setCurrentChatId(newId);
         const firstUserMessage = cleanMessagesForHistory.find(m => m.role === 'user');
@@ -87,7 +86,7 @@ export function useChatLogic() {
           id: newId, title, timestamp: Date.now(), messages: cleanMessagesForHistory,
           selectedModel, selectedGroup, systemPrompt, attachments,
         };
-        setChatHistory(prev => [entryToSave, ...prev.slice(0, MAX_HISTORY_LENGTH - 1)]);
+        newHistory.unshift(entryToSave);
       }
     } else { // New chat
       const newId = `chat-${Date.now()}`;
@@ -98,11 +97,15 @@ export function useChatLogic() {
         id: newId, title, timestamp: Date.now(), messages: cleanMessagesForHistory,
         selectedModel, selectedGroup, systemPrompt, attachments,
       };
-      setChatHistory(prev => {
-        const newHistory = [entryToSave, ...prev];
-        return newHistory.length > MAX_HISTORY_LENGTH ? newHistory.slice(0, MAX_HISTORY_LENGTH) : newHistory;
-      });
+      newHistory.unshift(entryToSave);
     }
+
+    // Ensure history does not exceed max length
+    if (newHistory.length > MAX_HISTORY_LENGTH) {
+      newHistory = newHistory.slice(0, MAX_HISTORY_LENGTH);
+    }
+    setChatHistory(newHistory);
+
   }, [currentChatId, chatHistory, selectedModel, selectedGroup, systemPrompt, attachments, setChatHistory, setCurrentChatId]);
 
 
@@ -114,7 +117,7 @@ export function useChatLogic() {
       setSelectedGroup(chatToLoad.selectedGroup);
       setSystemPrompt(chatToLoad.systemPrompt);
       setAttachments(chatToLoad.attachments || []);
-      setCurrentChatId(chatToLoad.id); // Set the loaded chat as the current one
+      setCurrentChatId(chatToLoad.id);
       setHasSubmitted(true);
       setInput('');
       toast.info(`Loaded chat: "${chatToLoad.title}"`);
@@ -124,22 +127,32 @@ export function useChatLogic() {
   const deleteChatFromHistory = useCallback((chatId: string) => {
     setChatHistory(prevHistory => prevHistory.filter(chat => chat.id !== chatId));
     if (currentChatId === chatId) {
-        setCurrentChatId(null); // If deleting the active chat, reset currentChatId
+        setCurrentChatId(null);
+        coreResetChatState(); // Also clear the UI if deleting the active chat
+        toast.info("Active chat removed from history. New chat started.");
+    } else {
+        toast.info("Chat removed from history");
     }
-    toast.info("Chat removed from history");
-  }, [setChatHistory, currentChatId, setCurrentChatId]);
+  }, [setChatHistory, currentChatId, setCurrentChatId, coreResetChatState]);
 
 
   const handleNewChatSession = useCallback(() => {
-    setCurrentChatId(null); // Signal that the next interaction starts a new chat
+    setCurrentChatId(null);
     coreResetChatState();
     toast.info("New chat session started");
   }, [coreResetChatState, setCurrentChatId]);
 
+  const clearAllChatHistory = useCallback(() => {
+    setChatHistory([]);
+    setCurrentChatId(null);
+    coreResetChatState();
+    toast.success("All chat history cleared!");
+  }, [setChatHistory, setCurrentChatId, coreResetChatState]);
+
 
   const {
-    handleSend: streamHandlerSend, // Renamed to avoid conflict
-    handleStopStreaming, 
+    handleSend: streamHandlerSend,
+    handleStopStreaming,
     handleRetry,
     chatStatus,
     isStreamCancelledByUser,
@@ -157,17 +170,14 @@ export function useChatLogic() {
     setMessages,
     setInput,
     setHasSubmitted,
-    onMessagesUpdatedForHistory: saveOrUpdateCurrentChatInHistory, // Pass the callback
+    onMessagesUpdatedForHistory: saveOrUpdateCurrentChatInHistory,
   });
 
-  // UI calls this handleSend
   const handleSend = useCallback(async (messageContent: string) => {
     await streamHandlerSend(messageContent);
-    // saveOrUpdateCurrentChatInHistory is now called by streamHandlerSend via onMessagesUpdatedForHistory
   }, [streamHandlerSend]);
 
 
-  // Derive overall status
   const [overallStatus, setOverallStatus] = useState<'ready' | 'processing' | 'error'>('ready');
   useEffect(() => {
     if (modelFetchingStatus === 'processing' || chatStatus === 'processing') {
@@ -179,7 +189,6 @@ export function useChatLogic() {
     }
   }, [modelFetchingStatus, chatStatus]);
 
-  // Consolidate errors (prefer chat error if both exist)
   const lastError = chatLastError || modelFetchingError;
   const errorType = chatErrorType || (modelFetchingStatus === 'error' ? 'generic' : 'generic');
   const errorDetails = chatErrorDetails || null;
@@ -196,8 +205,8 @@ export function useChatLogic() {
     systemPrompt, setSystemPrompt,
     isSystemPromptVisible, setIsSystemPromptVisible,
     status: overallStatus,
-    handleSend, // This is the one UI calls
-    handleStopStreaming, handleRetry, fetchAccountInfo, 
+    handleSend,
+    handleStopStreaming, handleRetry, fetchAccountInfo,
     resetChatState: handleNewChatSession,
     selectedGroup, setSelectedGroup,
     hasSubmitted, setHasSubmitted,
@@ -217,6 +226,7 @@ export function useChatLogic() {
     chatHistory,
     loadChatFromHistory,
     deleteChatFromHistory,
+    clearAllChatHistory, // Expose the new function
   };
 }
 

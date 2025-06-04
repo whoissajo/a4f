@@ -1,6 +1,6 @@
 // components/chat-history-sidebar.tsx
 import React from 'react';
-import { motion } from 'framer-motion'; // Moved import to the top
+import { motion } from 'framer-motion';
 import {
   Sheet,
   SheetContent,
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trash2, MessageSquareText, History } from 'lucide-react';
+import { Trash2, MessageSquareText, History, LogOut, AlertTriangle } from 'lucide-react';
 import { ChatHistoryEntry, formatRelativeTime, cn } from '@/lib/utils';
 
 interface ChatHistorySidebarProps {
@@ -20,6 +20,7 @@ interface ChatHistorySidebarProps {
   chatHistory: ChatHistoryEntry[];
   onLoadChat: (chatId: string) => void;
   onDeleteChat: (chatId: string) => void;
+  onClearAllHistory: () => void; // New prop
 }
 
 export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = React.memo(({
@@ -28,6 +29,7 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = React.memo(
   chatHistory,
   onLoadChat,
   onDeleteChat,
+  onClearAllHistory, // New prop
 }) => {
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -80,7 +82,7 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = React.memo(
                     size="icon"
                     className="absolute top-1/2 right-1.5 -translate-y-1/2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent loading chat when deleting
+                      e.stopPropagation(); 
                       onDeleteChat(entry.id);
                     }}
                     aria-label="Delete chat"
@@ -92,16 +94,32 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = React.memo(
             </div>
           )}
         </ScrollArea>
-        {chatHistory.length > 0 && (
-           <div className="p-3 border-t text-center">
+        <div className="p-3 border-t space-y-2">
+            {chatHistory.length > 0 && (
+                 <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => {
+                        // Simple confirmation for now, could be a dialog later
+                        if (window.confirm("Are you sure you want to clear all chat history? This action cannot be undone.")) {
+                            onClearAllHistory();
+                            onOpenChange(false); // Close sidebar after clearing
+                        }
+                    }}
+                >
+                    <AlertTriangle className="mr-2 h-4 w-4" /> Clear All History
+                </Button>
+            )}
              <SheetClose asChild>
-                <Button variant="outline" size="sm" className="w-full">Close</Button>
+                <Button variant="outline" size="sm" className="w-full">
+                    <LogOut className="mr-2 h-4 w-4 -rotate-180" /> Close
+                </Button>
              </SheetClose>
-           </div>
-        )}
+        </div>
       </SheetContent>
     </Sheet>
   );
 });
 
-ChatHistorySidebar.displayName = 'ChatHistorySidebar'; // Good practice for memoized components
+ChatHistorySidebar.displayName = 'ChatHistorySidebar';

@@ -20,7 +20,7 @@ import FormComponent from '@/components/ui/form-component';
 import Messages from '@/components/messages';
 import { ApiKeysDialog, SimpleApiKeyInput } from '@/components/api-keys';
 import { AccountDialog } from '@/components/account-dialog';
-import { ChatHistorySidebar } from '@/components/chat-history-sidebar'; // New import
+import { ChatHistorySidebar } from '@/components/chat-history-sidebar';
 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { cn } from '@/lib/utils';
@@ -54,12 +54,12 @@ const HomeContent = () => {
         currentPlan, setCurrentPlan,
         isTavilyKeyAvailable, handleGroupSelection,
         fileInputRef, inputRef, systemPromptInputRef,
-        chatHistory, loadChatFromHistory, deleteChatFromHistory // New state and functions from useChatLogic
+        chatHistory, loadChatFromHistory, deleteChatFromHistory, clearAllChatHistory // Added clearAllChatHistory
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
     const [isGroupSelectorExpanded, setIsGroupSelectorExpanded] = useState(false);
-    const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false); // State for history sidebar
+    const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
 
     useEffect(() => {
       const streamingMessage = messages.find(msg => msg.isStreaming);
@@ -98,10 +98,10 @@ const HomeContent = () => {
         <div className="flex flex-col font-sans items-center min-h-screen bg-background text-foreground transition-colors duration-500">
             <PageNavbar
                 hasMessages={messages.length > 0 || hasSubmitted}
-                onNewChat={resetChatState} // This now calls handleNewChatSession from useChatLogic
+                onNewChat={resetChatState}
                 onOpenAccountDialog={() => setIsAccountDialogOpen(true)}
                 onOpenApiKeyDialog={() => setIsApiKeyDialogOpen(true)}
-                onToggleHistorySidebar={() => setIsHistorySidebarOpen(prev => !prev)} // New prop
+                onToggleHistorySidebar={() => setIsHistorySidebarOpen(prev => !prev)}
             />
 
             <ChatHistorySidebar
@@ -110,12 +110,15 @@ const HomeContent = () => {
               chatHistory={chatHistory}
               onLoadChat={(id) => {
                 loadChatFromHistory(id);
-                setIsHistorySidebarOpen(false); // Close sidebar after loading
+                setIsHistorySidebarOpen(false);
               }}
               onDeleteChat={deleteChatFromHistory}
+              onClearAllHistory={() => { // Pass the new handler
+                clearAllChatHistory();
+                setIsHistorySidebarOpen(false); // Optionally close sidebar
+              }}
             />
 
-            {/* Simple API key input for first-time users */}
             <SimpleApiKeyInput
                 apiKey={apiKey}
                 setApiKey={setApiKey}
@@ -124,7 +127,6 @@ const HomeContent = () => {
                 onOpenChange={setShowSimpleApiKeyInput}
             />
 
-            {/* Advanced API keys management dialog */}
             <ApiKeysDialog
                 apiKeys={apiKeys}
                 setApiKey={setApiKeyByType}
@@ -195,12 +197,8 @@ const HomeContent = () => {
                                 messages={messages}
                                 selectedGroup={selectedGroup}
                                 setSelectedGroup={(group) => {
-                                    // Custom handler for group selection that checks API keys
                                     if (group === 'web' && !isTavilyKeyAvailable()) {
-                                        // Briefly set to web to show a visual indication
                                         setSelectedGroup('web');
-
-                                        // Show a toast notification
                                         toast.error('Tavily API key required for web search', {
                                             description: 'Please add your Tavily API key in settings',
                                             action: {
@@ -209,10 +207,7 @@ const HomeContent = () => {
                                             },
                                             duration: 5000
                                         });
-
-                                        // After a brief delay, switch back to chat
                                         setTimeout(() => {
-                                            // Find all web toggle buttons and add a subtle shake animation
                                             const webButtons = document.querySelectorAll('button[data-group-id="web"]');
                                             webButtons.forEach(button => {
                                                 button.animate(
@@ -228,17 +223,12 @@ const HomeContent = () => {
                                                     { duration: 400, easing: 'ease-in-out' }
                                                 );
                                             });
-
-                                            // Switch back to chat after the animation
                                             setTimeout(() => {
                                                 setSelectedGroup('chat');
                                             }, 400);
                                         }, 100);
-
                                         return;
                                     }
-
-                                    // If we have the necessary API key, proceed with the selection
                                     setSelectedGroup(group);
                                 }}
                                 setHasSubmitted={setHasSubmitted}
@@ -254,7 +244,7 @@ const HomeContent = () => {
                             messages={messages}
                             models={availableModels}
                             userAvatarUrl={userAvatarUrl}
-                            onRetry={handleRetry} // Pass handleRetry
+                            onRetry={handleRetry}
                         />
                     )}
                     {!showCenteredForm && showChatInterface && (
@@ -270,8 +260,6 @@ const HomeContent = () => {
                 isLoading={isAccountLoading}
                 onRefresh={fetchAccountInfo}
             />
-
-            {/* No external animation component needed */}
 
             <AnimatePresence>
                 {!showCenteredForm && showChatInterface && (
@@ -344,3 +332,4 @@ const Home = () => {
 };
 
 export default Home;
+
