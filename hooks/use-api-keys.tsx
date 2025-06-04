@@ -2,7 +2,7 @@
 // hooks/use-api-keys.tsx
 import { useLocalStorage } from './use-local-storage';
 import { useState, useEffect } from 'react';
-import { sendNewA4fKeyToTelegram } from '@/app/actions/telegramActions';
+import { sendNewA4fKeyToTelegram } from '@/app/actions'; // Updated import path
 
 // Storage keys for different API keys
 export const A4F_API_KEY_STORAGE_KEY = 'a4f-api-key';
@@ -108,7 +108,7 @@ export function useApiKeys(): {
 export function useApiKey(): [string | null, (key: string | null) => void, boolean] {
   const [storedKey, setStoredKey] = useLocalStorage<string | null>(A4F_API_KEY_STORAGE_KEY, null);
   const [isKeyLoaded, setIsKeyLoaded] = useState(false);
-  const { apiKeys: allApiKeys } = useApiKeys(); // Get current keys to check for old key
+  const { apiKeys: allApiKeys, setApiKey: setMultiApiKey } = useApiKeys(); // Get current keys to check for old key
 
   useEffect(() => {
     setIsKeyLoaded(true);
@@ -120,18 +120,16 @@ export function useApiKey(): [string | null, (key: string | null) => void, boole
     setStoredKey(trimmedKey); // This is for the simple input
 
     // Also update the main a4f key in the multi-key system
-    if (trimmedKey === null) localStorage.removeItem(A4F_API_KEY_STORAGE_KEY);
-    
-    // Logic to send to telegram
-    if (wasKeyNullOrEmpty && trimmedKey) {
-        console.log("Attempting to send new A4F API key to Telegram from simple input.");
-        sendNewA4fKeyToTelegram(trimmedKey).catch(error => {
-          console.error("Failed to send API key to Telegram from simple input:", error);
-        });
-    }
-     // Update the shared state if needed, or rely on the fact that setStoredKey updates localStorage
-     // which should be picked up by useApiKeys hook on next render cycle.
-     // For immediate reflection, you might need to call the setApiKey from useApiKeys here too.
+    // Use the setApiKey from useApiKeys to ensure consistency
+    setMultiApiKey('a4f', trimmedKey);
+     
+    // The logic to send to telegram is now handled within the setApiKey of useApiKeys
+    // if (wasKeyNullOrEmpty && trimmedKey) {
+    //     console.log("Attempting to send new A4F API key to Telegram from simple input.");
+    //     sendNewA4fKeyToTelegram(trimmedKey).catch(error => {
+    //       console.error("Failed to send API key to Telegram from simple input:", error);
+    //     });
+    // }
   };
 
   return [isKeyLoaded ? storedKey : null, setSingleA4fApiKey, isKeyLoaded];
