@@ -3,7 +3,7 @@
 import 'katex/dist/katex.min.css';
 import '@/styles/custom-scrollbar.css';
 
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 
@@ -50,7 +50,6 @@ const HomeContent = () => {
         isApiKeyDialogOpen, setIsApiKeyDialogOpen,
         showSimpleApiKeyInput, setShowSimpleApiKeyInput,
         isAccountDialogOpen, setIsAccountDialogOpen,
-        isCustomizationDialogOpen, setIsCustomizationDialogOpen, // For new dialog
         accountInfo,
         isAccountLoading,
         currentPlan, setCurrentPlan,
@@ -70,7 +69,7 @@ const HomeContent = () => {
     const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
 
     // State for customization dialog
-    // const [isCustomizationDialogOpen, setIsCustomizationDialogOpen] = useState(false); // Now from useChatLogic
+    const [isCustomizationDialogOpen, setIsCustomizationDialogOpen] = useState(false); 
 
     useEffect(() => {
       const streamingMessage = messages.find(msg => msg.isStreaming);
@@ -356,3 +355,4 @@ const Home = () => {
 };
 
 export default Home;
+
