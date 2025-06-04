@@ -27,9 +27,9 @@ export function useChatLogic() {
     apiKeys, setApiKeyByType, isKeysLoaded,
     accountInfo, isAccountLoading, fetchAccountInfo,
     availableModels,
-    isApiKeyDialogOpen, setIsApiKeyDialogOpen,
+    // isApiKeyDialogOpen, setIsApiKeyDialogOpen, // No longer needed at this level
     showSimpleApiKeyInput, setShowSimpleApiKeyInput,
-    isAccountDialogOpen, setIsAccountDialogOpen,
+    // isAccountDialogOpen, setIsAccountDialogOpen, // No longer needed at this level
     currentPlan, setCurrentPlan,
     modelFetchingStatus, modelFetchingError,
     isTavilyKeyAvailable, handleGroupSelection: apiHandleGroupSelection,
@@ -59,7 +59,7 @@ export function useChatLogic() {
   const [isAttachmentButtonEnabled, setIsAttachmentButtonEnabled] = useLocalStorage<boolean>('a4f-attachment-button-enabled', true);
   const [ttsProvider, setTtsProvider] = useLocalStorage<'browser' | 'elevenlabs'>('a4f-tts-provider', 'browser');
   const [browserTtsSpeed, setBrowserTtsSpeed] = useLocalStorage<number>('a4f-browser-tts-speed', 1.0);
-  // TTS Voice states will be added later
+  
 
   const isSearchGroupEnabled = useCallback((groupId: SearchGroupId) => {
     return enabledSearchGroupIds.includes(groupId);
@@ -253,9 +253,9 @@ export function useChatLogic() {
     resetChatState: handleNewChatSession,
     selectedGroup, setSelectedGroup,
     hasSubmitted, setHasSubmitted,
-    isApiKeyDialogOpen, setIsApiKeyDialogOpen,
+    // isApiKeyDialogOpen, setIsApiKeyDialogOpen, // No longer needed
     showSimpleApiKeyInput, setShowSimpleApiKeyInput,
-    isAccountDialogOpen, setIsAccountDialogOpen,
+    // isAccountDialogOpen, setIsAccountDialogOpen, // No longer needed
     accountInfo,
     isAccountLoading,
     currentPlan, setCurrentPlan,
@@ -283,4 +283,3 @@ export function useChatLogic() {
     browserTtsSpeed, setBrowserTtsSpeed,
   };
 }
-

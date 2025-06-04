@@ -15,9 +15,7 @@ import { cn } from '@/lib/utils';
 interface PageNavbarProps {
   hasMessages: boolean;
   onNewChat: () => void;
-  onOpenAccountDialog: () => void;
-  onOpenApiKeyDialog: () => void;
-  onOpenCustomizationDialog: () => void; 
+  onOpenSettingsDialog: () => void; // Changed from individual dialog openers
   onToggleHistorySidebar: () => void;
   isChatHistoryFeatureEnabled: boolean; 
 }
@@ -29,9 +27,7 @@ interface PageNavbarProps {
 export const PageNavbar: React.FC<PageNavbarProps> = memo(({
     hasMessages,
     onNewChat,
-    onOpenAccountDialog,
-    onOpenApiKeyDialog,
-    onOpenCustomizationDialog, 
+    onOpenSettingsDialog, // Changed
     onToggleHistorySidebar,
     isChatHistoryFeatureEnabled, 
 }) => {
@@ -90,33 +86,15 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
 
         <div className="flex items-center space-x-2 sm:space-x-4">
           <ThemeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                aria-label="Settings"
-              >
-                <SettingsIcon className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={onOpenCustomizationDialog}>
-                <Palette className="mr-2 h-4 w-4" />
-                <span>Customization</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onOpenAccountDialog}>
-                <User className="mr-2 h-4 w-4" />
-                <span>Account</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onOpenApiKeyDialog}>
-                <KeyRound className="mr-2 h-4 w-4" />
-                <span>API Keys</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            aria-label="Settings"
+            onClick={onOpenSettingsDialog} // Changed to open the main settings dialog
+          >
+            <SettingsIcon className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     );
