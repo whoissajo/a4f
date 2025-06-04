@@ -102,14 +102,14 @@ const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGr
 
     return (
         <motion.div
-            layout={false}
+            layout="position" // Enable layout animations for width, gap, padding
             initial={false}
             animate={{
                 width: isMobile
-                    ? (isExpanded ? '100%' : '38px') // Mobile behavior for width
-                    : 'auto', // Desktop width is always auto to fit all enabled icons
-                gap: (isMobile && !isExpanded) ? 0 : (isExpanded && !isProcessing ? '0.5rem' : '0.25rem'), // Adjust gap: no gap for mobile collapsed, otherwise based on expansion
-                paddingRight: (isMobile && !isExpanded) ? 0 : (isExpanded && !isProcessing ? '0.4rem' : '0.2rem'), // Adjust padding similarly
+                    ? (isExpanded ? '100%' : '38px') 
+                    : 'auto', 
+                gap: (isMobile && !isExpanded) ? 0 : (isExpanded && !isProcessing ? '0.5rem' : '0.25rem'),
+                paddingRight: (isMobile && !isExpanded) ? 0 : (isExpanded && !isProcessing ? '0.4rem' : '0.2rem'),
             }}
             transition={{
                 duration: 0.2,
@@ -132,20 +132,23 @@ const SelectionContent: React.FC<SelectionContentProps> = ({ selectedGroup, onGr
                     return (
                         <motion.div
                             key={group.id}
-                            layout={false} // Prevent layout animations for individual items if parent is handling width
+                            layout={false} 
                             animate={{
-                                width: '28px', // Each icon container has a fixed width
-                                opacity: 1,    // Always visible if in visibleGroups
+                                width: '28px', 
+                                opacity: 1,   
                             }}
-                            className={cn('m-0!')} // Parent gap handles spacing
+                            className={cn('m-0!')} 
                         >
                             <ToolbarButton
                                 group={group}
                                 isSelected={selectedGroup === group.id}
-                                onClick={() => isMobile && !isExpanded && visibleGroups.length > 1 // Only toggle if there are other groups to show
-                                    ? handleToggleExpand() 
-                                    : handleGroupSelectInternal(group)
-                                }
+                                onClick={() => {
+                                    if (isMobile && !isExpanded) { // If mobile and collapsed, clicking the (only) button expands
+                                        handleToggleExpand();
+                                    } else { // If mobile & expanded OR desktop, clicking a button selects it (and collapses on mobile)
+                                        handleGroupSelectInternal(group);
+                                    }
+                                }}
                             />
                         </motion.div>
                     );
@@ -166,3 +169,4 @@ export const GroupSelector: React.FC<GroupSelectorProps> = ({ selectedGroup, onG
         />
     );
 };
+
