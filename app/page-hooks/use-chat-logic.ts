@@ -27,9 +27,7 @@ export function useChatLogic() {
     apiKeys, setApiKeyByType, isKeysLoaded,
     accountInfo, isAccountLoading, fetchAccountInfo,
     availableModels,
-    // isApiKeyDialogOpen, setIsApiKeyDialogOpen, // No longer needed at this level
     showSimpleApiKeyInput, setShowSimpleApiKeyInput,
-    // isAccountDialogOpen, setIsAccountDialogOpen, // No longer needed at this level
     currentPlan, setCurrentPlan,
     modelFetchingStatus, modelFetchingError,
     isTavilyKeyAvailable, handleGroupSelection: apiHandleGroupSelection,
@@ -59,6 +57,8 @@ export function useChatLogic() {
   const [isAttachmentButtonEnabled, setIsAttachmentButtonEnabled] = useLocalStorage<boolean>('a4f-attachment-button-enabled', true);
   const [ttsProvider, setTtsProvider] = useLocalStorage<'browser' | 'elevenlabs'>('a4f-tts-provider', 'browser');
   const [browserTtsSpeed, setBrowserTtsSpeed] = useLocalStorage<number>('a4f-browser-tts-speed', 1.0);
+  const [selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI] = useLocalStorage<string | undefined>('a4f-browser-tts-voice-uri', undefined);
+  const [availableBrowserVoices, setAvailableBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
   
 
   const isSearchGroupEnabled = useCallback((groupId: SearchGroupId) => {
@@ -75,6 +75,37 @@ export function useChatLogic() {
       return newEnabled;
     });
   }, [selectedGroup, setSelectedGroup, setEnabledSearchGroupIds]);
+
+  // Effect to load browser voices for TTS
+  useEffect(() => {
+    const populateVoices = () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        const voices = window.speechSynthesis.getVoices();
+        setAvailableBrowserVoices(voices);
+        
+        if (voices.length > 0) {
+          const currentSelectedVoiceExists = voices.some(v => v.voiceURI === selectedBrowserTtsVoiceURI);
+          if (!selectedBrowserTtsVoiceURI || !currentSelectedVoiceExists) {
+            const defaultUsEngVoice = voices.find(voice => voice.lang === 'en-US' && voice.default);
+            const firstUsEngVoice = voices.find(voice => voice.lang === 'en-US');
+            const firstVoice = voices[0];
+            setSelectedBrowserTtsVoiceURI(defaultUsEngVoice?.voiceURI || firstUsEngVoice?.voiceURI || firstVoice?.voiceURI);
+          }
+        }
+      }
+    };
+
+    populateVoices(); // Initial attempt
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = populateVoices; // Listener for async voice loading
+    }
+
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, [selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI]);
 
 
   const saveOrUpdateCurrentChatInHistory = useCallback((messagesForHistory: SimpleMessage[]) => {
@@ -184,6 +215,47 @@ export function useChatLogic() {
     toast.success("All chat history cleared!");
   }, [setChatHistory, setCurrentChatId, coreResetChatState, isChatHistoryFeatureEnabled]);
 
+  const handleFullReset = useCallback(() => {
+    // Clear API Keys
+    setApiKeyByType('a4f', null);
+    setApiKeyByType('tavily', null);
+    setApiKeyByType('elevenlabs', null);
+
+    // Reset core chat state (includes messages, currentChatId, input, attachments, systemPrompt)
+    clearAllChatHistory(); // This calls coreResetChatState internally after clearing history
+
+    // Reset Customization to defaults
+    setCurrentPlan('free');
+    setSelectedModel(fallbackModels.find(m => m.modelType === 'free')?.value || "system-provider/default-fallback-free");
+    setIsChatHistoryFeatureEnabled(true);
+    setEnabledSearchGroupIds(allSearchGroupsConfig.filter(g => g.show).map(g => g.id));
+    setIsTextToSpeechFeatureEnabled(true);
+    setIsSystemPromptButtonEnabled(true);
+    setIsAttachmentButtonEnabled(true);
+    setTtsProvider('browser');
+    setBrowserTtsSpeed(1.0);
+    setSelectedBrowserTtsVoiceURI(undefined);
+    // The simple API key input should show up due to apiKey becoming null
+    setShowSimpleApiKeyInput(true);
+
+    toast.success("Application has been reset to defaults.");
+  }, [
+    setApiKeyByType, 
+    clearAllChatHistory, 
+    setCurrentPlan, 
+    setSelectedModel, 
+    setIsChatHistoryFeatureEnabled, 
+    setEnabledSearchGroupIds, 
+    setIsTextToSpeechFeatureEnabled, 
+    setIsSystemPromptButtonEnabled, 
+    setIsAttachmentButtonEnabled, 
+    setTtsProvider, 
+    setBrowserTtsSpeed,
+    setSelectedBrowserTtsVoiceURI,
+    setShowSimpleApiKeyInput
+  ]);
+
+
   const handleGroupSelection = useCallback((group: SearchGroup) => {
     if (!enabledSearchGroupIds.includes(group.id)) {
         toast.error(`${group.name} group is currently disabled. You can enable it in Customization settings.`);
@@ -253,9 +325,7 @@ export function useChatLogic() {
     resetChatState: handleNewChatSession,
     selectedGroup, setSelectedGroup,
     hasSubmitted, setHasSubmitted,
-    // isApiKeyDialogOpen, setIsApiKeyDialogOpen, // No longer needed
     showSimpleApiKeyInput, setShowSimpleApiKeyInput,
-    // isAccountDialogOpen, setIsAccountDialogOpen, // No longer needed
     accountInfo,
     isAccountLoading,
     currentPlan, setCurrentPlan,
@@ -270,6 +340,7 @@ export function useChatLogic() {
     loadChatFromHistory,
     deleteChatFromHistory,
     clearAllChatHistory,
+    handleFullReset, // Expose the new reset function
     
     // Customization states and functions
     isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled,
@@ -281,5 +352,7 @@ export function useChatLogic() {
     isAttachmentButtonEnabled, setIsAttachmentButtonEnabled,
     ttsProvider, setTtsProvider,
     browserTtsSpeed, setBrowserTtsSpeed,
+    availableBrowserVoices, // Expose available voices
+    selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, // Expose selected voice URI
   };
 }

@@ -15,7 +15,8 @@ interface InteractionButtonsProps {
   message: SimpleMessage; 
   onRetry?: (assistantMessageId: string) => void;
   isTextToSpeechFeatureEnabled: boolean;
-  browserTtsSpeed: number; // New prop for browser TTS speed
+  browserTtsSpeed: number;
+  selectedBrowserTtsVoiceURI?: string; // New prop for selected voice
   // Add ttsProvider and elevenLabsApiKey/voiceId later if needed for ElevenLabs
 }
 
@@ -23,7 +24,8 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
   message, 
   onRetry, 
   isTextToSpeechFeatureEnabled,
-  browserTtsSpeed 
+  browserTtsSpeed,
+  selectedBrowserTtsVoiceURI
 }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
@@ -109,17 +111,26 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
       return;
     }
 
-    // For now, this always uses browser TTS. Will be updated to use ttsProvider.
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
         setIsSpeaking(false);
-        if (isSpeaking) return; // If it was speaking and we cancelled, don't immediately restart
+        if (isSpeaking) return; 
       }
 
       const utterance = new SpeechSynthesisUtterance(content);
-      utterance.rate = browserTtsSpeed; // Use the speed from props
-      // utterance.voice = selectedVoice; // Voice selection to be added later
+      utterance.rate = browserTtsSpeed;
+      
+      if (selectedBrowserTtsVoiceURI) {
+        const voices = window.speechSynthesis.getVoices();
+        const selectedVoice = voices.find(voice => voice.voiceURI === selectedBrowserTtsVoiceURI);
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        } else {
+          toast.warn("Selected voice not found, using default.");
+        }
+      }
+      
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = (event) => {
@@ -146,10 +157,10 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
       link.href = localUrl;
       
       let filename = decodeURIComponent(imageUrl.substring(imageUrl.lastIndexOf('/') + 1));
-      filename = filename.split('?')[0]; // Remove query params from filename
+      filename = filename.split('?')[0]; 
 
-      if (!filename || !filename.includes('.')) { // Basic check for extension
-        const extension = blob.type.split('/')[1] || 'png'; // Fallback extension
+      if (!filename || !filename.includes('.')) { 
+        const extension = blob.type.split('/')[1] || 'png'; 
         filename = `image-${messageId}.${extension}`;
       }
       link.download = filename;
@@ -157,7 +168,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(localUrl); // Clean up blob URL
+      URL.revokeObjectURL(localUrl); 
       toast.success("Image download started");
     } catch (err: any) {
       console.error('Failed to download image:', err);
@@ -202,7 +213,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
         )
       )}
 
-      {onRetry && (isError || content) && ( // Show retry if it's an error OR if there's content (allows retrying successful but perhaps unsatisfactory responses)
+      {onRetry && (isError || content) && ( 
         <motion.div
             whileTap={{ scale: 0.85 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -312,4 +323,3 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
     </div>
   );
 };
-

@@ -12,7 +12,8 @@ interface MessagesProps {
     userAvatarUrl?: string | null;
     onRetry?: (assistantMessageIdToRetry: string) => void;
     isTextToSpeechFeatureEnabled: boolean;
-    browserTtsSpeed: number; // New prop
+    browserTtsSpeed: number; 
+    selectedBrowserTtsVoiceURI?: string; // New prop
 }
 
 const Messages: React.FC<MessagesProps> = ({ 
@@ -21,7 +22,8 @@ const Messages: React.FC<MessagesProps> = ({
     userAvatarUrl = null, 
     onRetry, 
     isTextToSpeechFeatureEnabled,
-    browserTtsSpeed
+    browserTtsSpeed,
+    selectedBrowserTtsVoiceURI
 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -154,6 +156,7 @@ const Messages: React.FC<MessagesProps> = ({
                     onRetry={message.role === 'assistant' ? onRetry : undefined}
                     isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                     browserTtsSpeed={browserTtsSpeed}
+                    selectedBrowserTtsVoiceURI={selectedBrowserTtsVoiceURI}
                 />
             ))}
             <div ref={messagesEndRef} />
@@ -177,4 +180,3 @@ const Messages: React.FC<MessagesProps> = ({
 };
 
 export default Messages;
-

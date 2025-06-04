@@ -17,12 +17,19 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ApiKeyType, ApiKeyInfo } from '@/hooks/use-api-keys';
 import { SearchGroupId, searchGroups as allSearchGroupsConfig, cn, formatCurrency, formatRelativeTime, formatSimpleDate } from '@/lib/utils';
 import { 
     User, KeyRound, Palette, Settings, Brain, Mic, MessageSquareText, 
     Copy, Check, BarChart2, ExternalLink, Settings2 as SettingsIconLucide, Layers, Briefcase, Info, AlertTriangle, Package, Tag, ShieldCheck, Percent, ListChecks, Coffee, XIcon,
-    Volume2, RadioTower,
+    Volume2, RadioTower, LogOut,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -75,6 +82,7 @@ interface SettingsDialogProps {
   accountInfo: AccountInfoForDisplay | null;
   isAccountLoading: boolean;
   onRefreshAccount: () => void;
+  onLogoutAndReset: () => void; // New prop for logout
 
   // API Keys props
   apiKeys: Record<ApiKeyType, ApiKeyInfo>;
@@ -99,6 +107,9 @@ interface SettingsDialogProps {
   onSetTtsProvider: (provider: 'browser' | 'elevenlabs') => void;
   browserTtsSpeed: number;
   onSetBrowserTtsSpeed: (speed: number) => void;
+  availableBrowserVoices: SpeechSynthesisVoice[];
+  selectedBrowserTtsVoiceURI: string | undefined;
+  onSetSelectedBrowserTtsVoiceURI: (uri: string | undefined) => void;
 }
 
 // Helper components from AccountDialog
@@ -154,6 +165,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   accountInfo,
   isAccountLoading,
   onRefreshAccount,
+  onLogoutAndReset,
   apiKeys,
   setApiKey,
   isKeysLoaded,
@@ -174,6 +186,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   onSetTtsProvider,
   browserTtsSpeed,
   onSetBrowserTtsSpeed,
+  availableBrowserVoices,
+  selectedBrowserTtsVoiceURI,
+  onSetSelectedBrowserTtsVoiceURI,
 }) => {
   const [activeTab, setActiveTab] = useState('account');
   
@@ -186,10 +201,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      onRefreshAccount(); // Refresh account info when dialog opens
-      setTempElevenLabsKey(elevenLabsApiKey || ''); // Sync ElevenLabs temp key
+      onRefreshAccount(); 
+      setTempElevenLabsKey(elevenLabsApiKey || ''); 
     } else {
-      // Clear temp API keys when dialog closes
       setA4fTempKey('');
       setTavilyTempKey('');
     }
@@ -243,6 +257,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const handleRemoveElevenLabsKey = () => { onSetElevenLabsApiKey(null); setTempElevenLabsKey(''); toast.info("ElevenLabs API Key removed."); };
   // --- End Customization Tab Content Helpers ---
 
+  const handleLogoutConfirmed = () => {
+    if (window.confirm("Are you sure you want to logout and reset all settings? This action cannot be undone.")) {
+      onLogoutAndReset();
+      onOpenChange(false); // Close dialog after reset
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl w-[95vw] max-h-[90vh] p-0 gap-0 bg-background dark:bg-[oklch(0.09_0.01_240)] rounded-xl shadow-2xl overflow-hidden flex flex-col">
@@ -283,14 +304,31 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       <DashboardCard title="Model Usage (Top 5 by Requests)" icon={<Layers size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Your most frequently used models."> {topModels.length > 0 ? <div className="space-y-2.5 text-xs"> {topModels.map(m => { const sr = m.r > 0 ? (m.s / m.r) * 100 : 0; return ( <div key={m.id} className="border-b border-border/30 dark:border-[oklch(0.25_0.02_240)]/40 pb-2 last:border-0 last:pb-0"> <div className="flex justify-between items-center mb-0.5"> <span className="font-medium text-foreground dark:text-neutral-100 truncate w-3/5 text-[11px] break-all" title={m.id}>{m.id}</span> <span className={cn("text-[10px] font-semibold", sr >= 75 ? "text-[var(--status-active-text-light)] dark:text-[var(--status-active-text-dark)]" : "text-[var(--status-loss-text-light)] dark:text-[var(--status-loss-text-dark)]")}>{m.s}/{m.r} reqs</span> </div> <Progress value={sr} className={cn("h-1 rounded-sm mb-1", sr >= 75 ? "[&>div]:bg-[var(--progress-success)]" : "[&>div]:bg-[var(--progress-loss)]")} /> <div className="flex justify-between items-center text-[10px] text-muted-foreground dark:text-neutral-400 mt-1"> <span>Cost: ${m.c.toFixed(8)}</span> {m.lu && <span>Used: {formatSimpleDate(m.lu)}</span>} </div> </div> ); })} </div> : <p className="text-xs text-muted-foreground dark:text-neutral-400">No model usage data available.</p>} </DashboardCard>
                       <DashboardCard title="Usage Cost" icon={<Briefcase size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Current estimated costs."> <div className="mb-2"> <p className="text-xs text-muted-foreground dark:text-neutral-400">Est. Token Cost (USD):</p> <p className="text-2xl sm:text-3xl font-bold text-foreground dark:text-neutral-100 my-0.5">{formatCurrency(billingInfo?.cumulative_token_cost_usd, 'USD', {maximumFractionDigits: (billingInfo?.cumulative_token_cost_usd ?? 0) > 0.01 || (billingInfo?.cumulative_token_cost_usd ?? 0) === 0 ? 2 : 4})}</p> </div> {subDetails?.effective_days_remaining !== undefined && <InfoRow label={`${formatPlanName(accInfo?.current_plan)} Plan - Days left`} value={`${subDetails.effective_days_remaining} days`} valueClassName="text-xs" />} <Button variant="outline" size="sm" className="w-full mt-3 text-xs font-medium dark:bg-[oklch(0.17_0.025_240)] dark:border-[oklch(0.28_0.025_240)] dark:text-neutral-200 dark:hover:bg-[oklch(0.2_0.015_240)]"> <ExternalLink size={12} className="mr-1.5" /> View Pricing / Manage Plan </Button> <Button size="sm" className="w-full mt-1.5 text-xs a4f-gradient-button-yellow font-semibold"> <Coffee size={12} className="mr-1.5" /> Buy me a coffee </Button> </DashboardCard>
                   </div>
+                  <Separator className="my-6" />
+                  <Button 
+                    variant="destructive" 
+                    className="w-full sm:w-auto"
+                    onClick={handleLogoutConfirmed}
+                  >
+                    <LogOut size={16} className="mr-2"/>
+                    Logout & Reset App
+                  </Button>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-6 sm:p-10 space-y-3">
                   <AlertTriangle className="h-8 w-8 text-amber-500 mb-2" />
                   <h3 className="text-lg sm:text-xl font-medium text-foreground dark:text-neutral-100">Account Information Unavailable</h3>
                   <p className="text-xs sm:text-sm text-muted-foreground dark:text-neutral-400 max-w-xs">
-                    Could not fetch account details. Please ensure your API key is correct and active, or try again later.
+                    Could not fetch account details. Please ensure your API key is correct and active, or try again later. If the issue persists, consider resetting the app.
                   </p>
+                   <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={handleLogoutConfirmed}
+                  >
+                    <LogOut size={16} className="mr-2"/>
+                    Logout & Reset App
+                  </Button>
                 </div>
               )}
             </div>
@@ -309,7 +347,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <Input id="a4f-key-input" type="password" value={a4fTempKey} onChange={(e) => setA4fTempKey(e.target.value)} placeholder={apiKeys.a4f.key ? 'Enter new key to update' : `Enter your ${apiKeys.a4f.name}`} />
                     <p className="text-xs text-muted-foreground">{apiKeys.a4f.description}. <a href={apiKeys.a4f.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get key</a>.</p>
                     <div className="flex justify-end gap-2 pt-2">
-                      {apiKeys.a4f.key && <Button variant="destructive" size="sm" onClick={() => handleRemoveApiKey('a4f')}>Remove</Button>}
+                      {apiKeys.a4f.key && <Button variant="destructive" size="sm" onClick={() => handleRemoveApiKey('a4f')}>Remove Key</Button>}
                       <Button size="sm" onClick={() => handleSaveApiKey('a4f')} disabled={!a4fTempKey.trim()}>{apiKeys.a4f.key ? 'Update' : 'Save'}</Button>
                     </div>
                   </div>
@@ -320,7 +358,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <Input id="tavily-key-input" type="password" value={tavilyTempKey} onChange={(e) => setTavilyTempKey(e.target.value)} placeholder={apiKeys.tavily.key ? 'Enter new key to update' : `Enter your ${apiKeys.tavily.name}`} />
                     <p className="text-xs text-muted-foreground">{apiKeys.tavily.description}. <a href={apiKeys.tavily.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Get key</a>.</p>
                     <div className="flex justify-end gap-2 pt-2">
-                      {apiKeys.tavily.key && <Button variant="destructive" size="sm" onClick={() => handleRemoveApiKey('tavily')}>Remove</Button>}
+                      {apiKeys.tavily.key && <Button variant="destructive" size="sm" onClick={() => handleRemoveApiKey('tavily')}>Remove Key</Button>}
                       <Button size="sm" onClick={() => handleSaveApiKey('tavily')} disabled={!tavilyTempKey.trim()}>{apiKeys.tavily.key ? 'Update' : 'Save'}</Button>
                     </div>
                   </div>
@@ -345,8 +383,40 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       <div className="p-3 rounded-lg border bg-card space-y-3">
                           <Label className="text-sm">TTS Provider</Label>
                           <Tabs value={ttsProvider} onValueChange={(v) => onSetTtsProvider(v as 'browser' | 'elevenlabs')}><TabsList className="grid w-full grid-cols-2"><TabsTrigger value="browser"><Volume2 className="mr-1.5 h-3.5 w-3.5"/>Browser</TabsTrigger><TabsTrigger value="elevenlabs"><RadioTower className="mr-1.5 h-3.5 w-3.5"/>ElevenLabs</TabsTrigger></TabsList></Tabs>
-                          {ttsProvider === 'browser' && <div className="space-y-3 pt-2"> <div className="flex items-center justify-between"><Label htmlFor="b-tts-speed" className="text-xs">Browser TTS Speed</Label><span className="text-xs">{browserTtsSpeed.toFixed(1)}x</span></div> <Slider id="b-tts-speed" min={0.5} max={2} step={0.1} value={[browserTtsSpeed]} onValueChange={(v) => onSetBrowserTtsSpeed(v[0])} /> </div>}
-                          {ttsProvider === 'elevenlabs' && <div className="space-y-2 pt-2"> <Label htmlFor="el-key" className="text-xs">ElevenLabs API Key</Label> <Input id="el-key" type="password" value={tempElevenLabsKey} onChange={(e) => setTempElevenLabsKey(e.target.value)} placeholder="Enter ElevenLabs API Key" /> <div className="flex justify-end gap-2"><Button variant="ghost" size="sm" onClick={handleRemoveElevenLabsKey} disabled={!elevenLabsApiKey}>Remove</Button><Button size="sm" onClick={handleSaveElevenLabsKey} disabled={tempElevenLabsKey === (elevenLabsApiKey || '') || !tempElevenLabsKey.trim()}>{elevenLabsApiKey ? 'Update' : 'Save'}</Button></div> </div>}
+                          {ttsProvider === 'browser' && (
+                            <div className="space-y-3 pt-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="b-tts-speed" className="text-xs text-muted-foreground">Browser TTS Speed</Label>
+                                    <span className="text-xs text-foreground font-medium">{browserTtsSpeed.toFixed(1)}x</span>
+                                </div>
+                                <Slider id="b-tts-speed" min={0.5} max={2} step={0.1} value={[browserTtsSpeed]} onValueChange={(v) => onSetBrowserTtsSpeed(v[0])} />
+                                <div className="space-y-1">
+                                  <Label htmlFor="browser-tts-voice" className="text-xs text-muted-foreground">Browser TTS Voice</Label>
+                                  <Select
+                                    value={selectedBrowserTtsVoiceURI}
+                                    onValueChange={onSetSelectedBrowserTtsVoiceURI}
+                                  >
+                                    <SelectTrigger id="browser-tts-voice">
+                                      <SelectValue placeholder="Select a voice..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {availableBrowserVoices.length > 0 ? (
+                                        availableBrowserVoices.map((voice) => (
+                                          <SelectItem key={voice.voiceURI} value={voice.voiceURI}>
+                                            {voice.name} ({voice.lang}) {voice.default ? "- Default" : ""}
+                                          </SelectItem>
+                                        ))
+                                      ) : (
+                                        <SelectItem value="no-voices" disabled>
+                                          No voices available or loading...
+                                        </SelectItem>
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                            </div>
+                          )}
+                          {ttsProvider === 'elevenlabs' && <div className="space-y-2 pt-2"> <Label htmlFor="el-key" className="text-xs text-muted-foreground">ElevenLabs API Key</Label> <Input id="el-key" type="password" value={tempElevenLabsKey} onChange={(e) => setTempElevenLabsKey(e.target.value)} placeholder="Enter ElevenLabs API Key" /> <div className="flex justify-end gap-2"><Button variant="ghost" size="sm" onClick={handleRemoveElevenLabsKey} disabled={!elevenLabsApiKey}>Remove</Button><Button size="sm" onClick={handleSaveElevenLabsKey} disabled={tempElevenLabsKey === (elevenLabsApiKey || '') || !tempElevenLabsKey.trim()}>{elevenLabsApiKey ? 'Update' : 'Save'}</Button></div> </div>}
                       </div>
                   )}
               </div>
@@ -368,6 +438,3 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     </Dialog>
   );
 };
-
-
-    

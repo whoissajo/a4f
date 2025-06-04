@@ -18,8 +18,7 @@ import { ApiKeyNotification } from '@/components/ui/form-component/notifications
 import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
 import Messages from '@/components/messages';
-import { SimpleApiKeyInput } from '@/components/api-keys'; // Keep for initial simple input
-// AccountDialog, ApiKeysDialog, CustomizationDialog are now effectively part of SettingsDialog
+import { SimpleApiKeyInput } from '@/components/api-keys'; 
 import { SettingsDialog } from '@/components/settings-dialog'; 
 import { ChatHistorySidebar } from '@/components/chat-history-sidebar';
 
@@ -54,6 +53,7 @@ const HomeContent = () => {
         isTavilyKeyAvailable, handleGroupSelection,
         fileInputRef, inputRef, systemPromptInputRef,
         chatHistory, loadChatFromHistory, deleteChatFromHistory, clearAllChatHistory,
+        handleFullReset, // Get the new reset function
         isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled,
         enabledSearchGroupIds, 
         toggleSearchGroup,
@@ -62,12 +62,14 @@ const HomeContent = () => {
         isAttachmentButtonEnabled, setIsAttachmentButtonEnabled, 
         ttsProvider, setTtsProvider, 
         browserTtsSpeed, setBrowserTtsSpeed,
+        availableBrowserVoices, // Get available voices
+        selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, // Get selected voice URI
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
     const [isGroupSelectorExpanded, setIsGroupSelectorExpanded] = useState(false);
     const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
-    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false); // New state for the main settings dialog
+    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false); 
 
     useEffect(() => {
       const streamingMessage = messages.find(msg => msg.isStreaming);
@@ -107,7 +109,7 @@ const HomeContent = () => {
             <PageNavbar
                 hasMessages={messages.length > 0 || hasSubmitted}
                 onNewChat={resetChatState}
-                onOpenSettingsDialog={() => setIsSettingsDialogOpen(true)} // Updated to open new SettingsDialog
+                onOpenSettingsDialog={() => setIsSettingsDialogOpen(true)} 
                 onToggleHistorySidebar={() => setIsHistorySidebarOpen(prev => !prev)}
                 isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
             />
@@ -144,11 +146,12 @@ const HomeContent = () => {
                 accountInfo={accountInfo}
                 isAccountLoading={isAccountLoading}
                 onRefreshAccount={fetchAccountInfo}
+                onLogoutAndReset={handleFullReset} // Pass reset function
                 // API Keys props
                 apiKeys={apiKeys}
                 setApiKey={setApiKeyByType}
                 isKeysLoaded={isKeysLoaded}
-                onSwitchToWebSearch={() => { /* This might need adjustment if Tavily key removal logic changes */
+                onSwitchToWebSearch={() => { 
                     const webGroup = allSearchGroupsConfig.find(g => g.id === 'web');
                     if (webGroup && enabledSearchGroupIds.includes('web')) {
                         handleGroupSelection(webGroup);
@@ -173,6 +176,9 @@ const HomeContent = () => {
                 onSetTtsProvider={setTtsProvider}
                 browserTtsSpeed={browserTtsSpeed}
                 onSetBrowserTtsSpeed={setBrowserTtsSpeed}
+                availableBrowserVoices={availableBrowserVoices}
+                selectedBrowserTtsVoiceURI={selectedBrowserTtsVoiceURI}
+                onSetSelectedBrowserTtsVoiceURI={setSelectedBrowserTtsVoiceURI}
             />
 
 
@@ -185,7 +191,7 @@ const HomeContent = () => {
                     "w-full max-w-[26rem] sm:max-w-2xl space-y-6 px-2 sm:px-0 mx-auto transition-all duration-300 flex-grow flex flex-col",
                     showCenteredForm && showChatInterface ? "justify-center -mt-16" : "justify-start"
                 )}>
-                    {!apiKey && isKeyLoaded && !showSimpleApiKeyInput && ( // Check showSimpleApiKeyInput as well
+                    {!apiKey && isKeyLoaded && !showSimpleApiKeyInput && ( 
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -258,6 +264,7 @@ const HomeContent = () => {
                             onRetry={handleRetry}
                             isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                             browserTtsSpeed={browserTtsSpeed}
+                            selectedBrowserTtsVoiceURI={selectedBrowserTtsVoiceURI}
                         />
                     )}
                     {!showCenteredForm && showChatInterface && (
@@ -265,9 +272,6 @@ const HomeContent = () => {
                     )}
                 </div>
             </div>
-
-            {/* The old individual dialogs (AccountDialog, ApiKeysDialog, CustomizationDialog) are removed from here
-                as their functionality is now part of SettingsDialog */}
 
             <AnimatePresence>
                 {!showCenteredForm && showChatInterface && (
