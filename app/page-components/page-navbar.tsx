@@ -102,6 +102,11 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={onOpenCustomizationDialog}>
+                <Palette className="mr-2 h-4 w-4" />
+                <span>Customization</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onOpenAccountDialog}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Account</span>
@@ -109,11 +114,6 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
               <DropdownMenuItem onClick={onOpenApiKeyDialog}>
                 <KeyRound className="mr-2 h-4 w-4" />
                 <span>API Keys</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onOpenCustomizationDialog}>
-                <Palette className="mr-2 h-4 w-4" />
-                <span>Customization</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
