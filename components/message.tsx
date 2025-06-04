@@ -1,14 +1,14 @@
 
 // components/message.tsx
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
+import { motion } from 'framer-motion';
+import Image from 'next/image'; // Corrected import
 import { MarkdownRenderer } from '@/components/markdown';
 import { TextFadeAnimation } from '@/components/text-fade-animation'; 
-import { User, Bot, Clock, AlertTriangle, AlertOctagon, ExternalLink } from 'lucide-react';
+import { User, Bot, EyeIcon } from 'lucide-react'; // Removed unused icons
 import { cn, SimpleMessage, ModelUIData } from '@/lib/utils'; 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button'; // No longer needed here
 import { InteractionButtons } from '@/components/interaction-buttons';
 import { ErrorMessage } from '@/components/error-message';
 import { ThinkingCardDisplay } from '@/components/thinking-card';
@@ -18,7 +18,7 @@ interface MessageProps {
     index: number;
     models?: ModelUIData[]; 
     userAvatarUrl?: string | null; 
-    onRetry?: (assistantMessageIdToRetry: string) => void; // Added onRetry
+    onRetry?: (assistantMessageIdToRetry: string) => void;
 }
 
 
@@ -28,43 +28,26 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
     const isErrorMessage = !isUser && message.isError === true;
     const actualErrorType = message.errorType || 'generic';
     
-    
-    const handleUpgradeClick = () => {
-        window.open('https://a4f.co/pricing', '_blank');
-    };
-
     const renderAiLogo = (modelId?: string) => {
-        
-        const model = modelId ? models.find((model) => model.value === modelId) : undefined;
+        const model = modelId ? models.find((m) => m.value === modelId) : undefined;
         
         if (model?.logoUrl) {
-            
-            const logoUrl = model.logoUrl;
-            
             return (
                 <div className="relative w-5 h-5 flex items-center justify-center">
-                    
                     <Image
-                        src={logoUrl}
+                        src={model.logoUrl}
                         alt={model.label || 'AI'}
                         width={20}
                         height={20}
-                        className="dark:hidden"
-                        unoptimized
-                    />
-                    
-                    <Image
-                        src={logoUrl}
-                        alt={model.label || 'AI'}
-                        width={20}
-                        height={20}
-                        className="hidden dark:block dark:invert"
+                        className={cn(model.logoUrl.endsWith('.svg') && "themeable-svg-logo")}
                         unoptimized
                     />
                 </div>
             );
+        } else if (model?.icon) {
+            const IconComponent = model.icon;
+            return <IconComponent className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />;
         }
-        
         return <Bot className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />;
     };
 
@@ -201,10 +184,8 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                             
                             {!isStreaming && message.content && (
                                 <InteractionButtons 
-                                    messageId={message.id} 
-                                    content={message.content} 
-                                    onRetry={onRetry} // Pass onRetry
-                                    isError={message.isError} // Pass isError
+                                    message={message} // Pass the full message object
+                                    onRetry={onRetry}
                                 />
                             )}
                         </>
@@ -228,9 +209,8 @@ export const Message: React.FC<MessageProps> = ({ message, index, models = [], u
                         )}
                     </div>
                 )}
-
-                 
             </div>
         </motion.div>
     );
 };
+

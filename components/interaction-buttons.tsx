@@ -1,24 +1,30 @@
 
 // components/interaction-buttons.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Check, ThumbsUp, ThumbsDown, Volume2, Download, VolumeX, RotateCcw } from 'lucide-react';
+import { Copy, Check, ThumbsUp, ThumbsDown, Volume2, Download, VolumeX, RotateCcw, Zap, Gauge } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { SimpleMessage, cn } from '@/lib/utils';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { SpeedInsightsPopoverContent } from '@/components/speed-insights-popover'; // New import
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface InteractionButtonsProps {
-  messageId: string;
-  content: string;
-  onRetry?: (assistantMessageId: string) => void; // New prop
-  isError?: boolean; // To show retry for errors
+  message: SimpleMessage; // Changed from messageId and content to full message object
+  onRetry?: (assistantMessageId: string) => void;
 }
 
-export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageId, content, onRetry, isError }) => {
+export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ message, onRetry }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  const { id: messageId, content, isError, promptTokens } = message;
 
   const imageUrlRegex = /!\[.*?\]\((.*?)\)/;
   const imageMatch = content.match(imageUrlRegex);
@@ -57,7 +63,6 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
     }
     
     try {
-      // If it's an image, copy the URL, otherwise copy the text content
       const textToCopy = imageUrl || content;
       await navigator.clipboard.writeText(textToCopy);
       setIsCopied(true);
@@ -69,41 +74,26 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
     }
   };
 
-  // Handle like button click
   const handleLike = () => {
     const newLikedState = !isLiked;
     setIsLiked(newLikedState);
-    
     if (newLikedState && isDisliked) {
       setIsDisliked(false);
       localStorage.removeItem(`message-disliked-${messageId}`);
     }
-    
-    if (newLikedState) {
-      localStorage.setItem(`message-liked-${messageId}`, 'true');
-    } else {
-      localStorage.removeItem(`message-liked-${messageId}`);
-    }
+    localStorage.setItem(`message-liked-${messageId}`, newLikedState ? 'true' : 'false');
   };
 
-  // Handle dislike button click
   const handleDislike = () => {
     const newDislikedState = !isDisliked;
     setIsDisliked(newDislikedState);
-    
     if (newDislikedState && isLiked) {
       setIsLiked(false);
       localStorage.removeItem(`message-liked-${messageId}`);
     }
-    
-    if (newDislikedState) {
-      localStorage.setItem(`message-disliked-${messageId}`, 'true');
-    } else {
-      localStorage.removeItem(`message-disliked-${messageId}`);
-    }
+    localStorage.setItem(`message-disliked-${messageId}`, newDislikedState ? 'true' : 'false');
   };
 
-  // Handle speaker button click
   const handleSpeaker = () => {
     if (imageUrl) {
       toast.info("Text-to-speech is not available for images.");
@@ -114,13 +104,11 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
       if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
         setIsSpeaking(false);
-        // If the current message is the one being spoken, stop it.
-        // Otherwise, stop the current speech and start the new one.
         if (isSpeaking) return; 
       }
 
       const utterance = new SpeechSynthesisUtterance(content);
-      utterance.rate = 1.5; // Set speech rate to 1.5x
+      utterance.rate = 1.5; 
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = (event) => {
@@ -134,7 +122,6 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
     }
   };
 
-  // Handle download button click
   const handleDownload = async () => {
     if (!imageUrl) return;
     try {
@@ -148,7 +135,6 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
       link.href = localUrl;
       
       let filename = decodeURIComponent(imageUrl.substring(imageUrl.lastIndexOf('/') + 1));
-      // Remove query parameters from filename if any
       filename = filename.split('?')[0];
 
       if (!filename || !filename.includes('.')) {
@@ -168,9 +154,45 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
     }
   };
 
+  const insightsButton = (
+    <motion.div
+      whileTap={{ scale: 0.85 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    >
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        aria-label="Speed Insights"
+        title="Speed Insights"
+      >
+        <Zap className="h-4 w-4 text-orange-500" />
+      </Button>
+    </motion.div>
+  );
+
   return (
-    <div className="flex gap-2 justify-end mt-2 mb-1">
-      {onRetry && (isError || content) && ( // Show retry if onRetry is provided and it's an error message or a completed content message
+    <div className="flex gap-1 sm:gap-2 justify-end mt-2 mb-1">
+      {/* Speed Insights Button */}
+      {typeof promptTokens !== 'undefined' && (
+        isDesktop ? (
+          <HoverCard openDelay={100} closeDelay={100}>
+            <HoverCardTrigger asChild>{insightsButton}</HoverCardTrigger>
+            <HoverCardContent side="top" align="end" className="w-auto p-0 border-none shadow-none bg-transparent">
+              <SpeedInsightsPopoverContent message={message} />
+            </HoverCardContent>
+          </HoverCard>
+        ) : (
+          <Popover>
+            <PopoverTrigger asChild>{insightsButton}</PopoverTrigger>
+            <PopoverContent side="top" align="end" className="w-auto p-0 border-none shadow-none bg-transparent">
+               <SpeedInsightsPopoverContent message={message} />
+            </PopoverContent>
+          </Popover>
+        )
+      )}
+
+      {onRetry && (isError || content) && (
         <motion.div
             whileTap={{ scale: 0.85 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -195,14 +217,14 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
           variant="ghost"
           size="sm"
           onClick={handleLike}
-          className={`h-8 w-8 p-0 rounded-full transition-colors ${
+          className={cn("h-8 w-8 p-0 rounded-full transition-colors", 
             isLiked 
               ? 'bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-700 dark:bg-green-950 dark:text-green-400 dark:hover:bg-green-900 dark:hover:text-green-300' 
               : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
-          }`}
+          )}
           aria-label="Like"
         >
-          <ThumbsUp className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+          <ThumbsUp className={cn("h-4 w-4", isLiked && "fill-current")} />
         </Button>
       </motion.div>
 
@@ -214,18 +236,18 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
           variant="ghost"
           size="sm"
           onClick={handleDislike}
-          className={`h-8 w-8 p-0 rounded-full transition-colors ${
+          className={cn("h-8 w-8 p-0 rounded-full transition-colors",
             isDisliked 
               ? 'bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900 dark:hover:text-red-300' 
               : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
-          }`}
+          )}
           aria-label="Dislike"
         >
-          <ThumbsDown className={`h-4 w-4 ${isDisliked ? 'fill-current' : ''}`} />
+          <ThumbsDown className={cn("h-4 w-4", isDisliked && "fill-current")} />
         </Button>
       </motion.div>
 
-      {!imageUrl && ( // Only show speaker button if it's not an image
+      {!imageUrl && (
         <motion.div
           whileTap={{ scale: 0.85 }}
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -242,7 +264,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({ messageI
         </motion.div>
       )}
 
-      {imageUrl && ( // Only show download button if it's an image
+      {imageUrl && ( 
         <motion.div
           whileTap={{ scale: 0.85 }}
           transition={{ type: "spring", stiffness: 400, damping: 17 }}

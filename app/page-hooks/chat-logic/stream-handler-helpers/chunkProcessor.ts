@@ -1,6 +1,7 @@
+
 // app/page-hooks/chat-logic/stream-handler-helpers/chunkProcessor.ts
 import OpenAI from 'openai';
-import { SimpleMessage } from '@/lib/utils';
+import { SimpleMessage, ApiChatCompletionChunk } from '@/lib/utils';
 import React from 'react';
 
 type SetMessagesType = React.Dispatch<React.SetStateAction<SimpleMessage[]>>;
@@ -18,6 +19,8 @@ export interface ProcessStreamChunksResult {
   wasCancelled: boolean;
   isEmptyStream: boolean;
   thinkTagProcessed: boolean;
+  firstChunkTimestamp: number | null; // Added to capture TTFT
+  usage: ApiChatCompletionChunk['usage'] | null; // Added to capture token usage
 }
 
 /**
@@ -34,6 +37,8 @@ export async function processStreamChunks({
   let inThinkBlock = false;
   let thinkTagProcessedThisStream = false;
   let contentReceived = false;
+  let firstChunkTimestamp: number | null = null;
+  let usage: ApiChatCompletionChunk['usage'] | null = null;
 
   for await (const chunk of stream) {
     if (isStreamCancelledByUserRef.current) {
@@ -41,7 +46,11 @@ export async function processStreamChunks({
     }
 
     const currentChunkDelta = chunk.choices[0]?.delta?.content || "";
+
     if (currentChunkDelta) {
+      if (!firstChunkTimestamp) {
+        firstChunkTimestamp = Date.now(); // Capture timestamp of the very first content chunk
+      }
       contentReceived = true;
       let tempBufferForChunkProcessing = currentChunkDelta;
 
@@ -93,6 +102,10 @@ export async function processStreamChunks({
         });
       });
     }
+     // Check for usage data in the chunk (typically the last one if stream_options.include_usage is true)
+    if (chunk.usage) {
+      usage = chunk.usage;
+    }
   }
 
   return {
@@ -101,5 +114,7 @@ export async function processStreamChunks({
     wasCancelled: isStreamCancelledByUserRef.current,
     isEmptyStream: !contentReceived && !isStreamCancelledByUserRef.current,
     thinkTagProcessed: thinkTagProcessedThisStream,
+    firstChunkTimestamp,
+    usage,
   };
 }

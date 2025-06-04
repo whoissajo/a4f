@@ -1,3 +1,4 @@
+
 // lib/utils.ts
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
@@ -32,6 +33,15 @@ export interface SimpleMessage {
   isThinkingInProgress?: boolean; // Flag indicating if currently processing content within <think> block
   thinkingCompleted?: boolean; // Flag indicating if </think> tag has been processed for this message
   isInterrupted?: boolean; // Flag indicating if message generation was stopped by the user
+
+  // Fields for Speed Insights
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  timeToFirstToken?: number; // seconds
+  streamDuration?: number; // seconds
+  totalInferenceTime?: number; // seconds (timeToFirstToken + streamDuration)
+  roundTripTime?: number; // seconds (total time from request sent to full response received)
 }
 
 export interface Attachment {
@@ -88,7 +98,7 @@ export interface ApiChatCompletionChunk {
     };
     finish_reason: string | null;
   }>;
-  usage?: {
+  usage?: { // This field can appear in the LAST chunk if include_usage is true
       prompt_tokens: number;
       completion_tokens: number;
       total_tokens: number;
@@ -259,3 +269,9 @@ export interface ChatHistoryEntry {
   systemPrompt: string;
   attachments?: Attachment[]; // Optional, if you want to save attachments
 }
+
+// Helper to format numbers for speed insights
+export const formatSpeedInsightNumber = (num?: number, precision: number = 0): string => {
+  if (typeof num === 'undefined' || num === null || isNaN(num)) return "N/A";
+  return num.toFixed(precision);
+};

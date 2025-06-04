@@ -1,4 +1,5 @@
 
+
 // app/page-hooks/chat-logic/useChatStreamHandler.ts
 import { useState, useCallback, useRef } from 'react';
 import OpenAI from 'openai';
@@ -63,6 +64,7 @@ export function useChatStreamHandler({
         toast.warning("Please wait for the current response.");
         return;
     }
+    const requestStartTime = Date.now(); // Record start time for roundTripTime
 
     // IMAGE MODE: If currentSelectedGroup is 'image', call image generation API
     if (currentSelectedGroup === 'image') {
@@ -90,6 +92,10 @@ export function useChatStreamHandler({
       };
       const assistantMessageId = `assistant-${Date.now()}-${Math.random()}`;
       currentAssistantMessageId.current = assistantMessageId;
+      
+      const assistantResponseEndTime = Date.now();
+      const roundTripTime = (assistantResponseEndTime - requestStartTime) / 1000;
+
       const assistantPlaceholder: SimpleMessage = {
         id: assistantMessageId,
         role: 'assistant',
@@ -98,6 +104,7 @@ export function useChatStreamHandler({
         isStreaming: true,
         modelId: selectedModelValue,
         isError: false,
+        roundTripTime: roundTripTime, // Add roundTripTime here
       };
       
       const updatedMessagesForUi = [...currentMessages, newUserMessage, assistantPlaceholder];
@@ -137,6 +144,8 @@ export function useChatStreamHandler({
 
         const data = await response.json();
         const imageUrl = data?.data?.[0]?.url;
+        const imageResponseEndTime = Date.now();
+        const finalRoundTripTime = (imageResponseEndTime - requestStartTime) / 1000;
         
         setMessages(prev => {
             const finalMessages = prev.map(msg =>
@@ -146,6 +155,7 @@ export function useChatStreamHandler({
                     content: imageUrl ? `![Generated Image](${imageUrl})` : 'No image URL returned by API.',
                     isStreaming: false,
                     modelId: selectedModelValue,
+                    roundTripTime: finalRoundTripTime,
                   }
                 : msg
             );
@@ -159,6 +169,8 @@ export function useChatStreamHandler({
         if (error.message && typeof error.message === 'string' && error.message.includes('status 400')) {
             errorMessageToDisplay = `Please select an image generation model. ${errorMessageToDisplay}`;
         }
+        const errorResponseEndTime = Date.now();
+        const errorRoundTripTime = (errorResponseEndTime - requestStartTime) / 1000;
         
         setMessages(prev => {
             const errorMessages = prev.map(msg =>
@@ -170,6 +182,7 @@ export function useChatStreamHandler({
                     isError: true,
                     errorType: 'generic', 
                     modelId: selectedModelValue,
+                    roundTripTime: errorRoundTripTime,
                   }
                 : msg
             );
@@ -279,6 +292,7 @@ export function useChatStreamHandler({
             model: selectedModelValue,
             messages: apiPayloadMessages,
             stream: true,
+            stream_options: { include_usage: true } // Request usage statistics
         } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming);
 
         const {
@@ -286,13 +300,18 @@ export function useChatStreamHandler({
           finalThinkingContent,
           wasCancelled,
           isEmptyStream,
-          thinkTagProcessed
+          thinkTagProcessed,
+          firstChunkTimestamp, // Get TTFT
+          usage, // Get usage object
         } = await processStreamChunks({
           stream,
-          setMessages, // This will update the messages in real-time for UI
+          setMessages, 
           currentAssistantMessageIdRef: currentAssistantMessageId,
           isStreamCancelledByUserRef: internalIsStreamCancelledByUserRef,
         });
+        
+        const responseEndTime = Date.now();
+
 
         // After stream processing, update history with the final assistant message state
         const finalMessageIdToUpdate = currentAssistantMessageId.current;
@@ -312,6 +331,11 @@ export function useChatStreamHandler({
                 messageErrorTypeValue = 'empty-stream';
             }
             
+            const timeToFirstToken = firstChunkTimestamp ? (firstChunkTimestamp - requestStartTime) / 1000 : undefined;
+            const streamDuration = firstChunkTimestamp ? (responseEndTime - firstChunkTimestamp) / 1000 : undefined;
+            const totalInferenceTime = (timeToFirstToken && streamDuration) ? timeToFirstToken + streamDuration : undefined;
+            const roundTripTime = (responseEndTime - requestStartTime) / 1000;
+
             setMessages(prev => {
                  const finalMessagesState = prev.map((msg: SimpleMessage) =>
                     msg.id === finalMessageIdToUpdate
@@ -327,6 +351,14 @@ export function useChatStreamHandler({
                             errorType: messageErrorTypeValue,
                             errorDetails: messageErrorDetailsValue,
                             isInterrupted: wasCancelled,
+                            // Add speed insights
+                            promptTokens: usage?.prompt_tokens,
+                            completionTokens: usage?.completion_tokens,
+                            totalTokens: usage?.total_tokens,
+                            timeToFirstToken,
+                            streamDuration,
+                            totalInferenceTime,
+                            roundTripTime,
                           }
                         : msg
                 );
@@ -337,6 +369,9 @@ export function useChatStreamHandler({
         currentAssistantMessageId.current = null;
 
     } catch (error: any) {
+        const errorResponseEndTime = Date.now();
+        const errorRoundTripTime = (errorResponseEndTime - requestStartTime) / 1000;
+        
         handleStreamError({
             error,
             setMessages, // This updates UI
@@ -348,8 +383,13 @@ export function useChatStreamHandler({
         });
         // After error handling updates messages state, propagate this to history
         setMessages(prev => {
-            onMessagesUpdatedForHistory(prev);
-            return prev;
+            const erroredMessages = prev.map(msg => 
+                msg.id === currentAssistantMessageId.current 
+                ? { ...msg, roundTripTime: errorRoundTripTime } 
+                : msg
+            );
+            onMessagesUpdatedForHistory(erroredMessages);
+            return erroredMessages;
         });
         toast.error(lastError || 'An unexpected error occurred while processing your request.');
         currentAssistantMessageId.current = null;
@@ -369,7 +409,7 @@ export function useChatStreamHandler({
       setHasSubmitted, 
       setIsStreamCancelledForParent,
       chatStatus,
-      onMessagesUpdatedForHistory, // Added dependency
+      onMessagesUpdatedForHistory, 
   ]);
 
   const handleRetry = useCallback(async (assistantMessageIdToRetry: string) => {
@@ -396,10 +436,8 @@ export function useChatStreamHandler({
 
     const promptContent = userMessageToRetry.content;
     
-    // Remove the failed assistant message and subsequent messages before retrying
     const messagesBeforeRetry = currentMessages.slice(0, assistantMsgIndex);
-    setMessages(messagesBeforeRetry); // Update UI state first
-    // The history will be updated when the new message sequence is sent via handleSend
+    setMessages(messagesBeforeRetry); 
 
     toast.info(`Retrying prompt...`);
     await handleSend(promptContent);
