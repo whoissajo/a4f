@@ -143,7 +143,7 @@ export function useChatLogic() {
   }, [coreResetChatState, setCurrentChatId]);
 
   const clearAllChatHistory = useCallback(() => {
-    setChatHistory([]);
+    setChatHistory(() => []); // Use functional update to ensure new reference
     setCurrentChatId(null);
     coreResetChatState();
     toast.success("All chat history cleared!");
