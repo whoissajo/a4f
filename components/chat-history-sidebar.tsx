@@ -1,5 +1,6 @@
 // components/chat-history-sidebar.tsx
 import React from 'react';
+import { motion } from 'framer-motion'; // Moved import to the top
 import {
   Sheet,
   SheetContent,
@@ -21,7 +22,7 @@ interface ChatHistorySidebarProps {
   onDeleteChat: (chatId: string) => void;
 }
 
-export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
+export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = React.memo(({
   isOpen,
   onOpenChange,
   chatHistory,
@@ -101,7 +102,6 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
       </SheetContent>
     </Sheet>
   );
-};
+});
 
-// Framer Motion for smooth animations
-import { motion } from 'framer-motion';
+ChatHistorySidebar.displayName = 'ChatHistorySidebar'; // Good practice for memoized components
