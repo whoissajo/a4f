@@ -110,11 +110,11 @@ export const PageNavbar: React.FC<PageNavbarProps> = memo(({
                 <KeyRound className="mr-2 h-4 w-4" />
                 <span>API Keys</span>
               </DropdownMenuItem>
-              {/* <DropdownMenuSeparator />
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onOpenCustomizationDialog}>
                 <Palette className="mr-2 h-4 w-4" />
                 <span>Customization</span>
-              </DropdownMenuItem> */}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
