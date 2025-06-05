@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { cn, ModelUIData, Attachment } from '@/lib/utils'; // Removed SimpleMessage as messages prop is removed
 import { DropdownMenu, DropdownMenuTrigger } from '../../dropdown-menu';
@@ -155,13 +156,17 @@ export const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
     };
 
     return (
-        <DropdownMenu onOpenChange={(openState: boolean) => {
-            setIsOpen(openState && !isTriggerDisabled);
-            if (!openState) {
-                setIsSearchUIVisible(false);
-                setSearchQuery('');
-            }
-        }} modal={false} open={isOpen && !isTriggerDisabled}>
+        <DropdownMenu
+            onOpenChange={(openState: boolean) => {
+                setIsOpen(openState && !isTriggerDisabled);
+                if (!openState) {
+                    setIsSearchUIVisible(false);
+                    setSearchQuery('');
+                }
+            }}
+            // modal={false} // Removed this line to default to modal={true}
+            open={isOpen && !isTriggerDisabled}
+        >
             <DropdownMenuTrigger
                 className={cn(
                     "flex items-center gap-2 p-2 sm:px-3 h-8",
@@ -207,3 +212,4 @@ export const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
         </DropdownMenu>
     );
 };
+
