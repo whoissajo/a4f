@@ -191,18 +191,18 @@ export const Message: React.FC<MessageProps> = ({
                             ) : (
                                 <MarkdownRenderer content={message.content} />
                             )}
-                            
-                            
-                            {!isStreaming && message.content && (
-                                <InteractionButtons 
-                                    message={message} 
-                                    onRetry={onRetry}
-                                    isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
-                                    browserTtsSpeed={browserTtsSpeed}
-                                    selectedBrowserTtsVoiceURI={selectedBrowserTtsVoiceURI}
-                                />
-                            )}
                         </>
+                    )}
+                    
+                    {/* Interaction buttons for assistant messages (error or success) when not streaming */}
+                    {!isUser && !isStreaming && (
+                        <InteractionButtons 
+                            message={message} 
+                            onRetry={onRetry}
+                            isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
+                            browserTtsSpeed={browserTtsSpeed}
+                            selectedBrowserTtsVoiceURI={selectedBrowserTtsVoiceURI}
+                        />
                     )}
                 </div>
 
