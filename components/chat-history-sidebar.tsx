@@ -103,7 +103,10 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                       </span>
                     </div>
                   </Button>
-                  <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                  <div className={cn(
+                    "flex items-center shrink-0 transition-opacity duration-150",
+                    "opacity-100 md:opacity-0 md:group-hover:opacity-100" 
+                  )}>
                      <Button
                         variant="ghost"
                         size="icon"
