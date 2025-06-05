@@ -29,7 +29,7 @@ import { SearchGroupId, searchGroups as allSearchGroupsConfig, cn, formatCurrenc
 import { 
     User, KeyRound, Palette, Settings, Brain, Mic, MessageSquareText, 
     Copy, Check, BarChart2, ExternalLink, Settings2 as SettingsIconLucide, Layers, Briefcase, Info, AlertTriangle, Package, Tag, ShieldCheck, Percent, ListChecks, Coffee, XIcon,
-    Volume2, RadioTower, LogOut,
+    Volume2, RadioTower, LogOut, Save
 } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -432,7 +432,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         </Tabs>
         
         <DialogFooter className="p-4 border-t border-border dark:border-[oklch(0.18_0.015_240)] shrink-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Save className="mr-2 h-4 w-4" />
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

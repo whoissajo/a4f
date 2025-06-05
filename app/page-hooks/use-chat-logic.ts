@@ -78,19 +78,27 @@ export function useChatLogic() {
 
   // Effect to load browser voices for TTS
   useEffect(() => {
+    const unwantedLanguageCodes = ['sq', 'vi', 'ur']; // Albanian, Vietnamese, Urdu
+
     const populateVoices = () => {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
-        const voices = window.speechSynthesis.getVoices();
-        setAvailableBrowserVoices(voices);
+        const allVoices = window.speechSynthesis.getVoices();
+        const filteredVoices = allVoices.filter(voice => 
+          !unwantedLanguageCodes.some(langCode => voice.lang.toLowerCase().startsWith(langCode))
+        );
+        setAvailableBrowserVoices(filteredVoices);
         
-        if (voices.length > 0) {
-          const currentSelectedVoiceExists = voices.some(v => v.voiceURI === selectedBrowserTtsVoiceURI);
+        if (filteredVoices.length > 0) {
+          const currentSelectedVoiceExists = filteredVoices.some(v => v.voiceURI === selectedBrowserTtsVoiceURI);
           if (!selectedBrowserTtsVoiceURI || !currentSelectedVoiceExists) {
-            const defaultUsEngVoice = voices.find(voice => voice.lang === 'en-US' && voice.default);
-            const firstUsEngVoice = voices.find(voice => voice.lang === 'en-US');
-            const firstVoice = voices[0];
+            const defaultUsEngVoice = filteredVoices.find(voice => voice.lang === 'en-US' && voice.default);
+            const firstUsEngVoice = filteredVoices.find(voice => voice.lang === 'en-US');
+            const firstVoice = filteredVoices[0];
             setSelectedBrowserTtsVoiceURI(defaultUsEngVoice?.voiceURI || firstUsEngVoice?.voiceURI || firstVoice?.voiceURI);
           }
+        } else if (selectedBrowserTtsVoiceURI) {
+            // If the selected voice was filtered out and no voices are left
+            setSelectedBrowserTtsVoiceURI(undefined);
         }
       }
     };
