@@ -6,8 +6,8 @@ import { twMerge } from "tailwind-merge"
 import { Bot, EyeIcon, BrainCircuit } from 'lucide-react';
 import React from "react";
 // Import icons for SearchGroup
-import { Globe, Book, YoutubeIcon as YoutubeLucideIcon, TelescopeIcon } from 'lucide-react';
-import { ChatsCircle, Code, Memory } from '@phosphor-icons/react';
+import { Globe, Book, YoutubeIcon as YoutubeLucideIcon, TelescopeIcon, Code as CodeIconLucide } from 'lucide-react';
+import { ChatsCircle, Memory } from '@phosphor-icons/react';
 import { Image as ImageIcon } from 'lucide-react';
 
 
@@ -145,7 +145,7 @@ export const mapApiModelToUIData = (apiModel: ApiModel, planContext: 'free' | 'p
 };
 
 // Search Group UI Data
-export type SearchGroupId = 'web' | 'buddy' | 'analysis' | 'chat' | 'academic' | 'youtube' | 'image';
+export type SearchGroupId = 'web' | 'buddy' | 'coder' | 'chat' | 'academic' | 'youtube' | 'image';
 export interface SearchGroup {
     id: SearchGroupId;
     name: string;
@@ -157,7 +157,7 @@ export interface SearchGroup {
 export const searchGroups: SearchGroup[] = [
   { id: 'web', name: 'Web', description: 'Standard web search', icon: Globe, show: true, },
   { id: 'buddy', name: 'Buddy', description: 'Your personal memory', icon: Memory, show: true, },
-  { id: 'analysis', name: 'Analysis', description: 'Code & data analysis', icon: Code, show: true, },
+  { id: 'coder', name: 'Coder', description: 'Your AI coding assistant for writing, debugging, and explaining code.', icon: CodeIconLucide, show: true, },
   { id: 'chat', name: 'Chat', description: 'Direct conversation', icon: ChatsCircle, show: true, },
   { id: 'academic', name: 'Academic', description: 'Search papers', icon: Book, show: true, },
   { id: 'youtube', name: 'YouTube', description: 'Search videos', icon: YoutubeLucideIcon, show: true, },
@@ -275,3 +275,4 @@ export const formatSpeedInsightNumber = (num?: number, precision: number = 0): s
   if (typeof num === 'undefined' || num === null || isNaN(num)) return "N/A";
   return num.toFixed(precision);
 };
+
