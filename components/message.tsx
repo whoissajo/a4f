@@ -4,9 +4,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { MarkdownRenderer } from '@/components/markdown';
-import { TextFadeAnimation } from '@/components/text-fade-animation'; 
-import { User, Bot, EyeIcon, Pencil } from 'lucide-react'; 
-import { cn, SimpleMessage, ModelUIData } from '@/lib/utils'; 
+import { TextFadeAnimation } from '@/components/text-fade-animation';
+import { User, Bot, EyeIcon, Pencil } from 'lucide-react';
+import { cn, SimpleMessage, ModelUIData } from '@/lib/utils';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { InteractionButtons } from '@/components/interaction-buttons';
 import { ErrorMessage } from '@/components/error-message';
@@ -16,23 +16,23 @@ import { Button } from '@/components/ui/button';
 interface MessageProps {
     message: SimpleMessage;
     index: number;
-    models?: ModelUIData[]; 
-    userAvatarUrl?: string | null; 
+    models?: ModelUIData[];
+    userAvatarUrl?: string | null;
     onRetry?: (assistantMessageIdToRetry: string) => void;
     isTextToSpeechFeatureEnabled: boolean;
-    browserTtsSpeed: number; 
+    browserTtsSpeed: number;
     selectedBrowserTtsVoiceURI?: string;
     editingMessageId: string | null;
     onStartEdit: (messageId: string, currentContent: string) => void;
 }
 
 
-export const Message: React.FC<MessageProps> = ({ 
-    message, 
-    index, 
-    models = [], 
-    userAvatarUrl = null, 
-    onRetry, 
+export const Message: React.FC<MessageProps> = ({
+    message,
+    index,
+    models = [],
+    userAvatarUrl = null,
+    onRetry,
     isTextToSpeechFeatureEnabled,
     browserTtsSpeed,
     selectedBrowserTtsVoiceURI,
@@ -43,10 +43,10 @@ export const Message: React.FC<MessageProps> = ({
     const isStreaming = message.role === 'assistant' && message.isStreaming;
     const isErrorMessage = !isUser && message.isError === true;
     const actualErrorType = message.errorType || 'generic';
-    
+
     const renderAiLogo = (modelId?: string) => {
         const model = modelId ? models.find((m) => m.value === modelId) : undefined;
-        
+
         if (model?.logoUrl) {
             return (
                 <div className="relative w-5 h-5 flex items-center justify-center">
@@ -74,35 +74,35 @@ export const Message: React.FC<MessageProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: isUser ? 0 : 0.1 }}
             className={cn(
-                "px-0 mb-4 sm:mb-5 group/message",
-                isUser ? "flex justify-end" : "flex justify-start" 
+                "px-0 mb-4 sm:mb-5", // Removed group/message from here
+                isUser ? "flex justify-end" : "flex justify-start"
             )}
         >
             <div className={cn(
                 "flex items-start gap-2 sm:gap-3 w-full",
                 isUser ? "justify-end" : "justify-start"
             )}>
-                
+
                 {!isUser && (
                     <div className={cn(
                         "flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center self-start border border-neutral-200 dark:border-neutral-800",
-                        (message.thinkingContent || message.isThinkingInProgress) ? "mt-4" : 
+                        (message.thinkingContent || message.isThinkingInProgress) ? "mt-4" :
                         isErrorMessage ? "mt-3" : "mt-1"
                     )}>
                         {renderAiLogo(message.modelId)}
                     </div>
                 )}
 
-                
+
                 <div className={cn(
-                    "flex flex-col", 
-                    "max-w-[85%] sm:max-w-[75%] md:max-w-[70%]" 
-                    
+                    "flex flex-col group/message", // Added group/message here
+                    "max-w-[85%] sm:max-w-[75%] md:max-w-[70%]"
+
                 )}>
-                    
+
                     {isUser ? (
                         <>
-                            <div className="text-base font-medium break-words whitespace-pre-wrap text-neutral-900 dark:text-neutral-100"> 
+                            <div className="text-base font-medium break-words whitespace-pre-wrap text-neutral-900 dark:text-neutral-100">
                                 <MarkdownRenderer content={message.content} />
                             </div>
                             {editingMessageId !== message.id && (
@@ -125,17 +125,17 @@ export const Message: React.FC<MessageProps> = ({
                             )}
                         </>
                     ) : isErrorMessage ? (
-                        <ErrorMessage 
+                        <ErrorMessage
                             type={actualErrorType}
                             message={message.content}
                             details={message.errorDetails}
                         />
-                    
+
                     ) : isStreaming && !message.content && !message.thinkingContent ? (
-                        
+
                         <div className="py-2">
                             <div className="flex items-center space-x-2">
-                                <motion.div 
+                                <motion.div
                                     className="thinking-animation flex items-center space-x-1"
                                     initial={{ opacity: 0.7 }}
                                     animate={{ opacity: 1 }}
@@ -146,7 +146,7 @@ export const Message: React.FC<MessageProps> = ({
                                             key={`dot-${i}`}
                                             className="h-2 w-2 bg-neutral-800 dark:bg-neutral-200 rounded-full"
                                             initial={{ y: 0 }}
-                                            animate={{ 
+                                            animate={{
                                                 y: [0, -10, 0],
                                                 scale: [1, 1.2, 1]
                                             }}
@@ -167,12 +167,12 @@ export const Message: React.FC<MessageProps> = ({
                                 >
                                     <motion.span
                                         initial={{ opacity: 0.5 }}
-                                        animate={{ 
+                                        animate={{
                                             opacity: [0.5, 1, 0.5],
                                             scale: [1, 1.02, 1]
                                         }}
-                                        transition={{ 
-                                            duration: 2, 
+                                        transition={{
+                                            duration: 2,
                                             repeat: Infinity,
                                             ease: "easeInOut"
                                         }}
@@ -181,36 +181,36 @@ export const Message: React.FC<MessageProps> = ({
                                     </motion.span>
                                 </motion.div>
                             </div>
-                            
-                            <motion.div 
+
+                            <motion.div
                                 className="thinking-bar mt-2 h-[2px] bg-gradient-to-r from-transparent via-neutral-800 to-transparent dark:via-neutral-200 rounded-full"
                                 initial={{ width: "0%", opacity: 0.7 }}
-                                animate={{ 
+                                animate={{
                                     width: ["0%", "30%", "70%", "100%", "70%", "30%", "0%"],
                                     opacity: [0.5, 0.8, 1, 0.8, 0.5]
                                 }}
-                                transition={{ 
-                                    duration: 3.5, 
+                                transition={{
+                                    duration: 3.5,
                                     repeat: Infinity,
                                     ease: "easeInOut"
                                 }}
                             />
                         </div>
                     ) : (
-                        
+
                         <>
-                            
+
                             {(message.thinkingContent || message.isThinkingInProgress) && (
-                                <ThinkingCardDisplay 
-                                    thinkContent={message.thinkingContent || ''} 
+                                <ThinkingCardDisplay
+                                    thinkContent={message.thinkingContent || ''}
                                     isThinkingInProgress={!!message.isThinkingInProgress}
                                 />
                             )}
 
-                            
+
                             {isStreaming ? (
-                                <TextFadeAnimation 
-                                    content={message.content} 
+                                <TextFadeAnimation
+                                    content={message.content}
                                     isStreaming={isStreaming}
                                 />
                             ) : (
@@ -218,10 +218,10 @@ export const Message: React.FC<MessageProps> = ({
                             )}
                         </>
                     )}
-                    
+
                     {!isUser && !isStreaming && (
-                        <InteractionButtons 
-                            message={message} 
+                        <InteractionButtons
+                            message={message}
                             onRetry={onRetry}
                             isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                             browserTtsSpeed={browserTtsSpeed}
@@ -230,7 +230,7 @@ export const Message: React.FC<MessageProps> = ({
                     )}
                 </div>
 
-                 
+
                 {isUser && (
                     <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center self-start mt-4 border border-neutral-300 dark:border-neutral-700 overflow-hidden">
                         {userAvatarUrl ? (
@@ -251,5 +251,3 @@ export const Message: React.FC<MessageProps> = ({
         </motion.div>
     );
 };
-
-    
