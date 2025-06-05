@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import { cn, ModelUIData, Attachment } from '@/lib/utils'; // Removed SimpleMessage as messages prop is removed
 import { DropdownMenu, DropdownMenuTrigger } from '../../dropdown-menu';
 import { Bot, EyeIcon, BrainCircuit } from 'lucide-react';
@@ -137,10 +138,13 @@ export const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
         const sizeClass = small ? "size-3.5" : "size-4";
         if (model.logoUrl) {
             const isSvg = model.logoUrl.endsWith('.svg');
-            return <img
+            return <Image
                      src={model.logoUrl}
                      alt={`${model.owner} logo`}
+                     width={small ? 14 : 16} 
+                     height={small ? 14 : 16}
                      className={cn(sizeClass, "rounded-sm object-contain", isSvg && "themeable-svg-logo")}
+                     unoptimized={true}
                    />;
         }
         const IconComponent = model.icon || Bot;
@@ -164,7 +168,6 @@ export const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
                     setSearchQuery('');
                 }
             }}
-            // modal={false} // Removed this line to default to modal={true}
             open={isOpen && !isTriggerDisabled}
         >
             <DropdownMenuTrigger

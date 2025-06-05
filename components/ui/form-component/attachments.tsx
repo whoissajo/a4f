@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import Image from 'next/image';
 import { cn, Attachment } from '../../../lib/utils';
 import { UploadingAttachment } from './types';
 
@@ -39,11 +40,18 @@ export const AttachmentPreview: React.FC<{ attachment: Attachment | UploadingAtt
                 </div>
             ) : (
                 <div className="w-8 h-8 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 shrink-0 ring-1 ring-neutral-200/50 dark:ring-neutral-700/50">
-                    <img
-                        src={(attachment as Attachment).url || ''}
+                    <Image
+                        src={(attachment as Attachment).url || '/icon.png'}
                         alt={`Preview of ${attachment.name}`}
+                        width={32}
+                        height={32}
                         className="h-full w-full object-cover"
-                        onError={(e) => (e.currentTarget.src = '/icon.png')}
+                        onError={(e) => {
+                            // Type assertion to satisfy TypeScript for currentTarget.src
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/icon.png';
+                         }}
+                        unoptimized={true}
                     />
                 </div>
             )}

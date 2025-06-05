@@ -1,5 +1,4 @@
 
-
 // app/page-hooks/chat-logic/useChatStreamHandler.ts
 import { useState, useCallback, useRef } from 'react';
 import OpenAI from 'openai';
@@ -172,15 +171,18 @@ export function useChatStreamHandler({
         const errorResponseEndTime = Date.now();
         const errorRoundTripTime = (errorResponseEndTime - requestStartTime) / 1000;
         
-        setMessages(prev => {
+        setLastError(errorMessageToDisplay);
+        setErrorType('generic'); // Set the state for errorType
+
+        setMessages(prev => { // This is line 175
             const errorMessages = prev.map(msg =>
-              msg.id === assistantMessageId
+              msg.id === assistantMessageId 
                 ? {
                     ...msg,
                     content: errorMessageToDisplay,
                     isStreaming: false,
                     isError: true,
-                    errorType: 'generic', 
+                    errorType: 'generic' as SimpleMessage['errorType'], // Explicitly cast 'generic'
                     modelId: selectedModelValue,
                     roundTripTime: errorRoundTripTime,
                   }
@@ -189,8 +191,6 @@ export function useChatStreamHandler({
             onMessagesUpdatedForHistory(errorMessages); // Update history with error message
             return errorMessages;
         });
-        setLastError(errorMessageToDisplay);
-        setErrorType('generic');
       } finally {
         setChatStatus('ready');
       }
@@ -409,7 +409,8 @@ export function useChatStreamHandler({
       setHasSubmitted, 
       setIsStreamCancelledForParent,
       chatStatus,
-      onMessagesUpdatedForHistory, 
+      onMessagesUpdatedForHistory,
+      lastError, // Added lastError to dependency array
   ]);
 
   const handleRetry = useCallback(async (assistantMessageIdToRetry: string) => {
