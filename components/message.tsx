@@ -5,12 +5,13 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { MarkdownRenderer } from '@/components/markdown';
 import { TextFadeAnimation } from '@/components/text-fade-animation'; 
-import { User, Bot, EyeIcon } from 'lucide-react'; 
+import { User, Bot, EyeIcon, Pencil } from 'lucide-react'; 
 import { cn, SimpleMessage, ModelUIData } from '@/lib/utils'; 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { InteractionButtons } from '@/components/interaction-buttons';
 import { ErrorMessage } from '@/components/error-message';
 import { ThinkingCardDisplay } from '@/components/thinking-card';
+import { Button } from '@/components/ui/button';
 
 interface MessageProps {
     message: SimpleMessage;
@@ -20,7 +21,9 @@ interface MessageProps {
     onRetry?: (assistantMessageIdToRetry: string) => void;
     isTextToSpeechFeatureEnabled: boolean;
     browserTtsSpeed: number; 
-    selectedBrowserTtsVoiceURI?: string; // New prop
+    selectedBrowserTtsVoiceURI?: string;
+    editingMessageId: string | null; // New prop
+    onStartEdit: (messageId: string, currentContent: string) => void; // New prop
 }
 
 
@@ -32,7 +35,9 @@ export const Message: React.FC<MessageProps> = ({
     onRetry, 
     isTextToSpeechFeatureEnabled,
     browserTtsSpeed,
-    selectedBrowserTtsVoiceURI
+    selectedBrowserTtsVoiceURI,
+    editingMessageId, // Destructure new prop
+    onStartEdit,      // Destructure new prop
 }) => {
     const isUser = message.role === 'user';
     const isStreaming = message.role === 'assistant' && message.isStreaming;
@@ -69,7 +74,7 @@ export const Message: React.FC<MessageProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: isUser ? 0 : 0.1 }}
             className={cn(
-                "px-0 mb-4 sm:mb-5",
+                "px-0 mb-4 sm:mb-5 group/message", // Added group/message for edit button visibility
                 isUser ? "flex justify-end" : "flex justify-start" 
             )}
         >
@@ -96,8 +101,28 @@ export const Message: React.FC<MessageProps> = ({
                 )}>
                     
                     {isUser ? (
-                        <div className="text-base font-medium break-words whitespace-pre-wrap text-neutral-900 dark:text-neutral-100"> 
-                            <MarkdownRenderer content={message.content} />
+                        <div className="relative">
+                            <div className="text-base font-medium break-words whitespace-pre-wrap text-neutral-900 dark:text-neutral-100"> 
+                                <MarkdownRenderer content={message.content} />
+                            </div>
+                            {editingMessageId !== message.id && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 5 }}
+                                    className="absolute -bottom-2 right-0 opacity-0 group-hover/message:opacity-100 transition-opacity duration-200"
+                                >
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 p-1 rounded-full bg-background/70 backdrop-blur-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                                        onClick={() => onStartEdit(message.id, message.content)}
+                                        title="Edit prompt"
+                                    >
+                                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                    </Button>
+                                </motion.div>
+                            )}
                         </div>
                     ) : isErrorMessage ? (
                         <ErrorMessage 
@@ -194,7 +219,6 @@ export const Message: React.FC<MessageProps> = ({
                         </>
                     )}
                     
-                    {/* Interaction buttons for assistant messages (error or success) when not streaming */}
                     {!isUser && !isStreaming && (
                         <InteractionButtons 
                             message={message} 
@@ -227,3 +251,5 @@ export const Message: React.FC<MessageProps> = ({
         </motion.div>
     );
 };
+
+    

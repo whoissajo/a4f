@@ -13,7 +13,9 @@ interface MessagesProps {
     onRetry?: (assistantMessageIdToRetry: string) => void;
     isTextToSpeechFeatureEnabled: boolean;
     browserTtsSpeed: number; 
-    selectedBrowserTtsVoiceURI?: string; // New prop
+    selectedBrowserTtsVoiceURI?: string;
+    editingMessageId: string | null; // New prop
+    onStartEdit: (messageId: string, currentContent: string) => void; // New prop
 }
 
 const Messages: React.FC<MessagesProps> = ({ 
@@ -23,7 +25,9 @@ const Messages: React.FC<MessagesProps> = ({
     onRetry, 
     isTextToSpeechFeatureEnabled,
     browserTtsSpeed,
-    selectedBrowserTtsVoiceURI
+    selectedBrowserTtsVoiceURI,
+    editingMessageId, // Destructure new prop
+    onStartEdit,      // Destructure new prop
 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -157,6 +161,8 @@ const Messages: React.FC<MessagesProps> = ({
                     isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                     browserTtsSpeed={browserTtsSpeed}
                     selectedBrowserTtsVoiceURI={selectedBrowserTtsVoiceURI}
+                    editingMessageId={editingMessageId} // Pass down
+                    onStartEdit={onStartEdit}         // Pass down
                 />
             ))}
             <div ref={messagesEndRef} />
@@ -180,3 +186,5 @@ const Messages: React.FC<MessagesProps> = ({
 };
 
 export default Messages;
+
+    

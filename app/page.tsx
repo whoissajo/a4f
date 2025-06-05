@@ -53,17 +53,23 @@ const HomeContent = () => {
         isTavilyKeyAvailable, handleGroupSelection,
         fileInputRef, inputRef, systemPromptInputRef,
         chatHistory, loadChatFromHistory, deleteChatFromHistory, clearAllChatHistory,
-        handleFullReset, // Get the new reset function
+        handleFullReset, 
         isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled,
         enabledSearchGroupIds, 
         toggleSearchGroup,
         isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
         isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled, 
         isAttachmentButtonEnabled, setIsAttachmentButtonEnabled, 
+        isSpeechToTextEnabled, setIsSpeechToTextEnabled,
         ttsProvider, setTtsProvider, 
         browserTtsSpeed, setBrowserTtsSpeed,
-        availableBrowserVoices, // Get available voices
-        selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, // Get selected voice URI
+        availableBrowserVoices, 
+        selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, 
+        isListening, 
+        handleToggleListening,
+        editingMessageId, // New
+        handleStartEdit,   // New
+        handleCancelEdit,  // New
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
@@ -146,7 +152,7 @@ const HomeContent = () => {
                 accountInfo={accountInfo}
                 isAccountLoading={isAccountLoading}
                 onRefreshAccount={fetchAccountInfo}
-                onLogoutAndReset={handleFullReset} // Pass reset function
+                onLogoutAndReset={handleFullReset} 
                 // API Keys props
                 apiKeys={apiKeys}
                 setApiKey={setApiKeyByType}
@@ -168,6 +174,8 @@ const HomeContent = () => {
                 onToggleSystemPromptButton={setIsSystemPromptButtonEnabled}
                 isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                 onToggleAttachmentButton={setIsAttachmentButtonEnabled}
+                isSpeechToTextEnabled={isSpeechToTextEnabled}
+                onToggleSpeechToTextEnabled={setIsSpeechToTextEnabled}
                 enabledSearchGroupIds={enabledSearchGroupIds}
                 onToggleSearchGroup={toggleSearchGroup}
                 elevenLabsApiKey={apiKeys.elevenlabs.key}
@@ -251,6 +259,11 @@ const HomeContent = () => {
                                 isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                                 isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
                                 isAttachmentButtonEnabled={isAttachmentButtonEnabled}
+                                isSpeechToTextEnabled={isSpeechToTextEnabled}
+                                isListening={isListening}
+                                handleToggleListening={handleToggleListening}
+                                editingMessageId={editingMessageId}
+                                handleCancelEdit={handleCancelEdit}
                             />
                             <DateTimeWidgets status={status} apiKey={apiKey} onDateTimeClick={handleWidgetDateTimeClick} />
                         </motion.div>
@@ -265,6 +278,8 @@ const HomeContent = () => {
                             isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                             browserTtsSpeed={browserTtsSpeed}
                             selectedBrowserTtsVoiceURI={selectedBrowserTtsVoiceURI}
+                            editingMessageId={editingMessageId}
+                            onStartEdit={handleStartEdit}
                         />
                     )}
                     {!showCenteredForm && showChatInterface && (
@@ -337,6 +352,11 @@ const HomeContent = () => {
                             isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
                             isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
                             isAttachmentButtonEnabled={isAttachmentButtonEnabled}
+                            isSpeechToTextEnabled={isSpeechToTextEnabled}
+                            isListening={isListening}
+                            handleToggleListening={handleToggleListening}
+                            editingMessageId={editingMessageId}
+                            handleCancelEdit={handleCancelEdit}
                         />
                     </motion.div>
                 )}
@@ -354,3 +374,5 @@ const Home = () => {
 };
 
 export default Home;
+
+    

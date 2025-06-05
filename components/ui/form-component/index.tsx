@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '../button';
 import { Textarea } from '../textarea';
 import useWindowSize from '../../../hooks/use-window-size';
-import { X, StopCircle, Upload, Bot as DefaultBotIcon } from 'lucide-react';
+import { X, StopCircle, Upload, Bot as DefaultBotIcon, Mic, AlertTriangle } from 'lucide-react';
 import SystemPromptInput from '../../system-prompt-input';
 import SystemPromptIcon from '../system-prompt-icon';
 import { cn, SearchGroupId, SimpleMessage, Attachment, ModelUIData, SearchGroup } from '@/lib/utils'; 
@@ -46,9 +46,12 @@ interface FormComponentProps {
     currentPlan: 'free' | 'pro';
     onPlanChange: (plan: 'free' | 'pro') => void;
     isTextToSpeechFeatureEnabled: boolean; 
-    // New props for button toggles
     isSystemPromptButtonEnabled: boolean;
     isAttachmentButtonEnabled: boolean;
+    isSpeechToTextEnabled: boolean;
+    isListening: boolean;
+    editingMessageId: string | null; // New
+    handleCancelEdit: () => void;   // New
 }
 
 const FormComponent: React.FC<FormComponentProps> = ({
@@ -77,8 +80,13 @@ const FormComponent: React.FC<FormComponentProps> = ({
     currentPlan,
     onPlanChange,
     isTextToSpeechFeatureEnabled, 
-    isSystemPromptButtonEnabled, // Destructure new prop
-    isAttachmentButtonEnabled, // Destructure new prop
+    isSystemPromptButtonEnabled,
+    isAttachmentButtonEnabled,
+    isSpeechToTextEnabled,
+    isListening,
+    handleToggleListening,
+    editingMessageId, // Destructure new prop
+    handleCancelEdit,  // Destructure new prop
 }) => {
     const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
     const isMounted = useRef(true);
@@ -176,9 +184,9 @@ const FormComponent: React.FC<FormComponentProps> = ({
                 toast.error(`Model '${models.find(m => m.value === selectedModel)?.label || selectedModel}' does not have vision capabilities. Remove attachments or switch to a model with vision support.`);
                 return;
             }
-            if (!messages || messages.length === 0) setHasSubmitted(true);
+            if (!messages || messages.length === 0 && !editingMessageId) setHasSubmitted(true);
 
-            if (isSystemPromptVisible) {
+            if (isSystemPromptVisible && !editingMessageId) { // Don't hide system prompt if we are editing
                 setIsSystemPromptVisible(false);
             }
 
@@ -186,7 +194,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         } else {
             toast.error("Please enter a message.");
         }
-    }, [input, attachments, handleSend, status, setHasSubmitted, messages, selectedModel, models, isSystemPromptVisible, setIsSystemPromptVisible]);
+    }, [input, attachments, handleSend, status, setHasSubmitted, messages, selectedModel, models, isSystemPromptVisible, setIsSystemPromptVisible, editingMessageId]);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => { if (event.key === "Enter" && !event.shiftKey && !isCompositionActive.current) { event.preventDefault(); if (status === 'processing') { toast.error("Please wait..."); } else { onSubmit({ preventDefault: () => { }, stopPropagation: () => { } } as React.FormEvent<HTMLFormElement>); } } };
 
@@ -232,7 +240,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                 }
             }}
             variant="outline"
-            disabled={isProcessing}
+            disabled={isProcessing || isListening}
             aria-label={currentModelSupportsVision ? "Attach image" : "Attach image (model does not have vision capabilities)"}
             title={currentModelSupportsVision ? "Attach image" : "Current model does not have vision capabilities. Click for more info."}
         >
@@ -240,19 +248,62 @@ const FormComponent: React.FC<FormComponentProps> = ({
         </Button>
     );
 
-    const SendButtonElement = (
+    const SpeechButtonElement = (
+        <Button
+            type="button"
+            className={cn(
+                "rounded-full p-1.5 h-8 w-8 bg-white dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600",
+                isListening ? "text-primary dark:text-primary-light animate-pulse" : "text-neutral-700 dark:text-neutral-300"
+            )}
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.preventDefault();
+                handleToggleListening();
+            }}
+            variant="outline"
+            disabled={isProcessing}
+            aria-label={isListening ? "Stop listening" : "Start voice input"}
+            title={isListening ? "Stop listening" : "Start voice input"}
+        >
+            <Mic size={14} />
+        </Button>
+    );
+
+    const SendOrUpdateButtonElement = (
         <Button
             type="submit"
             className="rounded-full p-1.5 h-8 w-8"
-            disabled={isProcessing || (input.trim().length === 0 && attachments.length === 0) || uploadQueue.length > 0}
-            aria-label={isImageMode ? "Generate image" : "Send message"}
+            disabled={isProcessing || isListening || (input.trim().length === 0 && attachments.length === 0 && !editingMessageId) || uploadQueue.length > 0}
+            aria-label={editingMessageId ? "Update prompt" : (isImageMode ? "Generate image" : "Send message")}
         >
             <ArrowUpIcon size={14} />
         </Button>
     );
 
+    const CancelEditButtonElement = (
+         <Button
+            type="button"
+            variant="ghost"
+            className="rounded-full p-1.5 h-8 w-8 text-muted-foreground hover:bg-neutral-200 dark:hover:bg-neutral-700"
+            onClick={handleCancelEdit}
+            aria-label="Cancel edit"
+        >
+            <X size={16} />
+        </Button>
+    );
+
+
     return (
         <div className="flex flex-col w-full">
+             {editingMessageId && (
+                <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mb-1.5 text-xs text-center text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 p-1.5 rounded-md border border-amber-200 dark:border-amber-700/50 flex items-center justify-center gap-1.5"
+                >
+                    <AlertTriangle size={12} /> Editing previous prompt...
+                </motion.div>
+            )}
             <form onSubmit={onSubmit} className="w-full">
                 <div
                     className={cn(
@@ -282,7 +333,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                         )}
 
                         <div className="relative rounded-lg bg-neutral-100 dark:bg-neutral-900">
-                            <Textarea ref={inputRef} placeholder={hasInteracted ? "Ask a new question..." : "Ask anything..."} value={input} onChange={handleInput} disabled={isProcessing} onFocus={handleFocus} onBlur={handleBlur} className={cn("w-full rounded-lg resize-none md:text-base!", "text-base leading-relaxed", "bg-neutral-100 dark:bg-neutral-900", "border border-neutral-200! dark:border-neutral-700!", "focus:border-neutral-300! dark:!focus:!border-neutral-500", isFocused ? "border-neutral-300! dark:border-neutral-500!" : "", "text-neutral-900 dark:text-neutral-100", "focus:ring-0!", "px-4 py-4 pb-16", "touch-manipulation", "whatsize")} rows={1} autoFocus={!isMobile && !hasInteracted} onCompositionStart={() => isCompositionActive.current = true} onCompositionEnd={() => isCompositionActive.current = false} onKeyDown={handleKeyDown} onPaste={handlePaste} />
+                            <Textarea ref={inputRef} placeholder={editingMessageId ? "Edit your prompt..." : (hasInteracted ? "Ask a new question..." : "Ask anything...")} value={input} onChange={handleInput} disabled={isProcessing || isListening} onFocus={handleFocus} onBlur={handleBlur} className={cn("w-full rounded-lg resize-none md:text-base!", "text-base leading-relaxed", "bg-neutral-100 dark:bg-neutral-900", "border border-neutral-200! dark:border-neutral-700!", "focus:border-neutral-300! dark:!focus:!border-neutral-500", isFocused ? "border-neutral-300! dark:border-neutral-500!" : "", "text-neutral-900 dark:text-neutral-100", "focus:ring-0!", "px-4 py-4 pb-16", "touch-manipulation", "whatsize")} rows={1} autoFocus={!isMobile && !hasInteracted && !editingMessageId} onCompositionStart={() => isCompositionActive.current = true} onCompositionEnd={() => isCompositionActive.current = false} onKeyDown={handleKeyDown} onPaste={handlePaste} />
 
                             <div className={cn(
                                 "absolute bottom-0 inset-x-0 flex justify-between items-center p-2 rounded-b-lg",
@@ -303,7 +354,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                             selectedModel={selectedModel}
                                             setSelectedModel={setSelectedModel}
                                             models={models}
-                                            isProcessing={isProcessing}
+                                            isProcessing={isProcessing || isListening}
                                             attachments={attachments}
                                             onModelSelect={handleModelSelect}
                                             currentPlan={currentPlan}
@@ -328,7 +379,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                                 }
                                             }}
                                             variant="outline"
-                                            disabled={isProcessing}
+                                            disabled={isProcessing || isListening}
                                             aria-label="Toggle System Prompt"
                                             title="System Prompt"
                                         >
@@ -336,7 +387,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                         </Button>
                                     )}
                                     {!isImageMode && isAttachmentButtonEnabled && AttachButtonElement}
-                                    {isProcessing ? (
+                                    {!isImageMode && isSpeechToTextEnabled && SpeechButtonElement}
+                                    {isProcessing && !isListening ? ( // Show stop only if processing and not listening
                                         <Button
                                             type="button"
                                             className="rounded-full p-1.5 h-8 w-8 bg-red-50 dark:bg-red-800 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-700 border border-red-200 dark:border-red-700"
@@ -350,7 +402,12 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                         >
                                             <StopCircle size={14} />
                                         </Button>
-                                    ) : SendButtonElement}
+                                    ) : (
+                                        <>
+                                          {editingMessageId && CancelEditButtonElement}
+                                          {SendOrUpdateButtonElement}
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -362,3 +419,5 @@ const FormComponent: React.FC<FormComponentProps> = ({
 };
 
 export default FormComponent;
+
+    

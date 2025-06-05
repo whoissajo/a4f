@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { fallbackModels } from '@/app/page-config/model-fallbacks';
 import { useApiManagement } from './chat-logic/useApiManagement';
@@ -55,11 +55,19 @@ export function useChatLogic() {
   const [isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled] = useLocalStorage<boolean>('a4f-tts-feature-enabled', true);
   const [isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled] = useLocalStorage<boolean>('a4f-system-prompt-button-enabled', true);
   const [isAttachmentButtonEnabled, setIsAttachmentButtonEnabled] = useLocalStorage<boolean>('a4f-attachment-button-enabled', true);
+  const [isSpeechToTextEnabled, setIsSpeechToTextEnabled] = useLocalStorage<boolean>('a4f-speech-to-text-enabled', true);
   const [ttsProvider, setTtsProvider] = useLocalStorage<'browser' | 'elevenlabs'>('a4f-tts-provider', 'browser');
   const [browserTtsSpeed, setBrowserTtsSpeed] = useLocalStorage<number>('a4f-browser-tts-speed', 1.0);
   const [selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI] = useLocalStorage<string | undefined>('a4f-browser-tts-voice-uri', undefined);
   const [availableBrowserVoices, setAvailableBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
   
+  // Speech-to-text states
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  // Editing message states
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+
 
   const isSearchGroupEnabled = useCallback((groupId: SearchGroupId) => {
     return enabledSearchGroupIds.includes(groupId);
@@ -76,36 +84,99 @@ export function useChatLogic() {
     });
   }, [selectedGroup, setSelectedGroup, setEnabledSearchGroupIds]);
 
-  // Effect to load browser voices for TTS
-  useEffect(() => {
-    const unwantedLanguageCodes = ['sq', 'vi', 'ur']; // Albanian, Vietnamese, Urdu
-
+    useEffect(() => {
     const populateVoices = () => {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         const allVoices = window.speechSynthesis.getVoices();
-        const filteredVoices = allVoices.filter(voice => 
-          !unwantedLanguageCodes.some(langCode => voice.lang.toLowerCase().startsWith(langCode))
-        );
-        setAvailableBrowserVoices(filteredVoices);
+        if (allVoices.length === 0 && 'onvoiceschanged' in window.speechSynthesis) {
+          // Voices might not be loaded yet, wait for the event.
+          return;
+        }
+
+        const desiredVoiceNames = [
+          'af-ZA-AdriNeural',
+          'af-ZA-WillemNeural',
+          'am-ET-AmehaNeural',
+        ];
+        const desiredLangsForFallback = ['af-ZA', 'am-ET'];
+        const keywordMap: Record<string, string[]> = {
+          'af-ZA': ['Adri', 'Willem'],
+          'am-ET': ['Ameha'],
+        };
+
+        let matchedVoices: SpeechSynthesisVoice[] = [];
+
+        // 1. Exact name or URI match
+        desiredVoiceNames.forEach(name => {
+          const voice = allVoices.find(v => v.name === name || v.voiceURI === name);
+          if (voice) matchedVoices.push(voice);
+        });
+
+        // 2. Fuzzy name match within language
+        if (matchedVoices.length < desiredVoiceNames.length) {
+          desiredLangsForFallback.forEach(lang => {
+            const langVoices = allVoices.filter(v => v.lang === lang);
+            (keywordMap[lang] || []).forEach(keyword => {
+              const voice = langVoices.find(v => v.name.includes(keyword) && !matchedVoices.some(mv => mv.voiceURI === v.voiceURI));
+              if (voice) matchedVoices.push(voice);
+            });
+          });
+        }
         
-        if (filteredVoices.length > 0) {
-          const currentSelectedVoiceExists = filteredVoices.some(v => v.voiceURI === selectedBrowserTtsVoiceURI);
+        // 3. Language-based fallback if specific names not found
+        if (matchedVoices.length === 0) {
+            desiredLangsForFallback.forEach(lang => {
+                const langVoices = allVoices.filter(v => v.lang === lang);
+                if (langVoices.length > 0) {
+                    (keywordMap[lang] || []).forEach(keyword => {
+                         const voiceByName = langVoices.find(v => v.name.includes(keyword) && !matchedVoices.some(mv => mv.voiceURI === v.voiceURI));
+                         if (voiceByName) matchedVoices.push(voiceByName);
+                    });
+                    // If specific names still not found, add first 1-2 generic voices for the language
+                    if (!(keywordMap[lang] || []).some(kw => matchedVoices.any(mv => mv.name.includes(kw) && mv.lang === lang))) {
+                        langVoices.slice(0, lang === 'af-ZA' ? 2 : 1).forEach(v => {
+                             if (!matchedVoices.some(mv => mv.voiceURI === v.voiceURI)) matchedVoices.push(v);
+                        });
+                    }
+                }
+            });
+        }
+
+        // De-duplicate
+        const uniqueVoiceURIs = new Set<string>();
+        const finalFilteredVoices = matchedVoices.filter(voice => {
+          if (!uniqueVoiceURIs.has(voice.voiceURI)) {
+            uniqueVoiceURIs.add(voice.voiceURI);
+            return true;
+          }
+          return false;
+        });
+
+        setAvailableBrowserVoices(finalFilteredVoices);
+        
+        if (finalFilteredVoices.length > 0) {
+          const currentSelectedVoiceExists = finalFilteredVoices.some(v => v.voiceURI === selectedBrowserTtsVoiceURI);
           if (!selectedBrowserTtsVoiceURI || !currentSelectedVoiceExists) {
-            const defaultUsEngVoice = filteredVoices.find(voice => voice.lang === 'en-US' && voice.default);
-            const firstUsEngVoice = filteredVoices.find(voice => voice.lang === 'en-US');
-            const firstVoice = filteredVoices[0];
-            setSelectedBrowserTtsVoiceURI(defaultUsEngVoice?.voiceURI || firstUsEngVoice?.voiceURI || firstVoice?.voiceURI);
+            // Try to pick a default from the desired list
+            let defaultVoice: SpeechSynthesisVoice | undefined = undefined;
+            for (const name of desiredVoiceNames) {
+                defaultVoice = finalFilteredVoices.find(v => v.name === name || v.voiceURI === name);
+                if (defaultVoice) break;
+            }
+            if (!defaultVoice) { // Fallback to first in filtered list
+                defaultVoice = finalFilteredVoices[0];
+            }
+            setSelectedBrowserTtsVoiceURI(defaultVoice?.voiceURI);
           }
         } else if (selectedBrowserTtsVoiceURI) {
-            // If the selected voice was filtered out and no voices are left
             setSelectedBrowserTtsVoiceURI(undefined);
         }
       }
     };
 
-    populateVoices(); // Initial attempt
+    populateVoices();
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = populateVoices; // Listener for async voice loading
+      window.speechSynthesis.onvoiceschanged = populateVoices;
     }
 
     return () => {
@@ -189,9 +260,10 @@ export function useChatLogic() {
       setCurrentChatId(chatToLoad.id);
       setHasSubmitted(true);
       setInput('');
+      setEditingMessageId(null); // Ensure edit mode is off
       toast.info(`Loaded chat: "${chatToLoad.title}"`);
     }
-  }, [chatHistory, setMessages, setSelectedModel, setSelectedGroup, setSystemPrompt, setAttachments, setCurrentChatId, setHasSubmitted, setInput, isChatHistoryFeatureEnabled]);
+  }, [chatHistory, setMessages, setSelectedModel, setSelectedGroup, setSystemPrompt, setAttachments, setCurrentChatId, setHasSubmitted, setInput, isChatHistoryFeatureEnabled, setEditingMessageId]);
 
   const deleteChatFromHistory = useCallback((chatId: string) => {
     if (!isChatHistoryFeatureEnabled) return;
@@ -199,18 +271,20 @@ export function useChatLogic() {
     if (currentChatId === chatId) {
         setCurrentChatId(null);
         coreResetChatState(); 
+        setEditingMessageId(null);
         toast.info("Active chat removed from history. New chat started.");
     } else {
         toast.info("Chat removed from history");
     }
-  }, [setChatHistory, currentChatId, setCurrentChatId, coreResetChatState, isChatHistoryFeatureEnabled]);
+  }, [setChatHistory, currentChatId, setCurrentChatId, coreResetChatState, isChatHistoryFeatureEnabled, setEditingMessageId]);
 
 
   const handleNewChatSession = useCallback(() => {
     setCurrentChatId(null);
     coreResetChatState();
+    setEditingMessageId(null);
     toast.info("New chat session started");
-  }, [coreResetChatState, setCurrentChatId]);
+  }, [coreResetChatState, setCurrentChatId, setEditingMessageId]);
 
   const clearAllChatHistory = useCallback(() => {
     if (!isChatHistoryFeatureEnabled) {
@@ -220,19 +294,15 @@ export function useChatLogic() {
     setChatHistory(() => []); 
     setCurrentChatId(null);
     coreResetChatState();
+    setEditingMessageId(null);
     toast.success("All chat history cleared!");
-  }, [setChatHistory, setCurrentChatId, coreResetChatState, isChatHistoryFeatureEnabled]);
+  }, [setChatHistory, setCurrentChatId, coreResetChatState, isChatHistoryFeatureEnabled, setEditingMessageId]);
 
   const handleFullReset = useCallback(() => {
-    // Clear API Keys
     setApiKeyByType('a4f', null);
     setApiKeyByType('tavily', null);
     setApiKeyByType('elevenlabs', null);
-
-    // Reset core chat state (includes messages, currentChatId, input, attachments, systemPrompt)
-    clearAllChatHistory(); // This calls coreResetChatState internally after clearing history
-
-    // Reset Customization to defaults
+    clearAllChatHistory(); 
     setCurrentPlan('free');
     setSelectedModel(fallbackModels.find(m => m.modelType === 'free')?.value || "system-provider/default-fallback-free");
     setIsChatHistoryFeatureEnabled(true);
@@ -240,12 +310,12 @@ export function useChatLogic() {
     setIsTextToSpeechFeatureEnabled(true);
     setIsSystemPromptButtonEnabled(true);
     setIsAttachmentButtonEnabled(true);
+    setIsSpeechToTextEnabled(true);
     setTtsProvider('browser');
     setBrowserTtsSpeed(1.0);
     setSelectedBrowserTtsVoiceURI(undefined);
-    // The simple API key input should show up due to apiKey becoming null
     setShowSimpleApiKeyInput(true);
-
+    setEditingMessageId(null);
     toast.success("Application has been reset to defaults.");
   }, [
     setApiKeyByType, 
@@ -257,10 +327,12 @@ export function useChatLogic() {
     setIsTextToSpeechFeatureEnabled, 
     setIsSystemPromptButtonEnabled, 
     setIsAttachmentButtonEnabled, 
+    setIsSpeechToTextEnabled,
     setTtsProvider, 
     setBrowserTtsSpeed,
     setSelectedBrowserTtsVoiceURI,
-    setShowSimpleApiKeyInput
+    setShowSimpleApiKeyInput,
+    setEditingMessageId
   ]);
 
 
@@ -272,6 +344,74 @@ export function useChatLogic() {
     apiHandleGroupSelection(group, selectedGroup, setSelectedGroup);
   }, [apiHandleGroupSelection, selectedGroup, setSelectedGroup, enabledSearchGroupIds]);
 
+  const handleToggleListening = useCallback(() => {
+    if (!isSpeechToTextEnabled) {
+      toast.info("Speech-to-text is disabled in settings.");
+      return;
+    }
+    if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      toast.error("Speech recognition is not supported by your browser.");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US'; // Or make this configurable
+
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+        toast.success("Listening...", { duration: 3000 });
+      };
+
+      let finalTranscript = '';
+      recognitionRef.current.onresult = (event) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        // Append final transcript to input. Consider replacing if needed.
+        if (finalTranscript) {
+            setInput(prevInput => prevInput + (prevInput ? " " : "") + finalTranscript);
+            finalTranscript = ''; // Reset for next final result
+        }
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        if (event.error === 'no-speech') {
+          toast.error("No speech detected. Please try again.");
+        } else if (event.error === 'audio-capture') {
+          toast.error("Microphone problem. Ensure it's connected and enabled.");
+        } else if (event.error === 'not-allowed') {
+          toast.error("Microphone access denied. Please allow access in browser settings.");
+        } else {
+          toast.error(`Speech recognition error: ${event.error}`);
+        }
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current.start();
+    }
+  }, [isListening, setInput, isSpeechToTextEnabled]);
+  
+  useEffect(() => {
+      if (!isSpeechToTextEnabled && isListening) {
+          recognitionRef.current?.stop();
+          setIsListening(false);
+      }
+  }, [isSpeechToTextEnabled, isListening]);
 
   const {
     handleSend: streamHandlerSend,
@@ -296,10 +436,44 @@ export function useChatLogic() {
     onMessagesUpdatedForHistory: saveOrUpdateCurrentChatInHistory,
   });
 
-  const handleSend = useCallback(async (messageContent: string) => {
+  const handleSendWrapper = useCallback(async (messageContent: string) => {
+    if (editingMessageId) {
+      const messageIndex = messages.findIndex(msg => msg.id === editingMessageId);
+      if (messageIndex !== -1) {
+        const messagesToKeep = messages.slice(0, messageIndex);
+        const updatedUserMessage: SimpleMessage = {
+          ...messages[messageIndex], // Keep original ID and other properties
+          content: messageContent,
+          createdAt: new Date(), // Update timestamp
+        };
+        const newMessagesState = [...messagesToKeep, updatedUserMessage];
+        setMessages(newMessagesState); // Update UI immediately with edited prompt
+        // Let streamHandlerSend use this new state indirectly through its props
+      }
+      setEditingMessageId(null); // Clear edit mode *before* sending
+      // The input is already set to messageContent by the FormComponent
+    }
     await streamHandlerSend(messageContent);
-  }, [streamHandlerSend]);
+  }, [streamHandlerSend, editingMessageId, messages, setMessages, setEditingMessageId]);
 
+  const handleStartEdit = useCallback((messageId: string, currentContent: string) => {
+    setEditingMessageId(messageId);
+    setInput(currentContent);
+    if (inputRef.current) {
+      inputRef.current.focus();
+      // Move cursor to the end
+      setTimeout(() => {
+        if (inputRef.current) {
+            inputRef.current.selectionStart = inputRef.current.selectionEnd = inputRef.current.value.length;
+        }
+      }, 0);
+    }
+  }, [setInput, inputRef, setEditingMessageId]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessageId(null);
+    setInput(''); // Clear the input field
+  }, [setInput, setEditingMessageId]);
 
   const [overallStatus, setOverallStatus] = useState<'ready' | 'processing' | 'error'>('ready');
   useEffect(() => {
@@ -328,7 +502,7 @@ export function useChatLogic() {
     systemPrompt, setSystemPrompt,
     isSystemPromptVisible, setIsSystemPromptVisible,
     status: overallStatus,
-    handleSend,
+    handleSend: handleSendWrapper, // Use the wrapper
     handleStopStreaming, handleRetry, fetchAccountInfo,
     resetChatState: handleNewChatSession,
     selectedGroup, setSelectedGroup,
@@ -348,7 +522,7 @@ export function useChatLogic() {
     loadChatFromHistory,
     deleteChatFromHistory,
     clearAllChatHistory,
-    handleFullReset, // Expose the new reset function
+    handleFullReset,
     
     // Customization states and functions
     isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled,
@@ -358,9 +532,21 @@ export function useChatLogic() {
     isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
     isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled,
     isAttachmentButtonEnabled, setIsAttachmentButtonEnabled,
+    isSpeechToTextEnabled, setIsSpeechToTextEnabled, // Export speech-to-text toggle
     ttsProvider, setTtsProvider,
     browserTtsSpeed, setBrowserTtsSpeed,
-    availableBrowserVoices, // Expose available voices
-    selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, // Expose selected voice URI
+    availableBrowserVoices, 
+    selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, 
+
+    // Speech-to-text
+    isListening, 
+    handleToggleListening,
+
+    // Editing messages
+    editingMessageId,
+    handleStartEdit,
+    handleCancelEdit,
   };
 }
+
+    
