@@ -22,8 +22,8 @@ interface MessageProps {
     isTextToSpeechFeatureEnabled: boolean;
     browserTtsSpeed: number; 
     selectedBrowserTtsVoiceURI?: string;
-    editingMessageId: string | null; // New prop
-    onStartEdit: (messageId: string, currentContent: string) => void; // New prop
+    editingMessageId: string | null;
+    onStartEdit: (messageId: string, currentContent: string) => void;
 }
 
 
@@ -36,8 +36,8 @@ export const Message: React.FC<MessageProps> = ({
     isTextToSpeechFeatureEnabled,
     browserTtsSpeed,
     selectedBrowserTtsVoiceURI,
-    editingMessageId, // Destructure new prop
-    onStartEdit,      // Destructure new prop
+    editingMessageId,
+    onStartEdit,
 }) => {
     const isUser = message.role === 'user';
     const isStreaming = message.role === 'assistant' && message.isStreaming;
@@ -74,7 +74,7 @@ export const Message: React.FC<MessageProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: isUser ? 0 : 0.1 }}
             className={cn(
-                "px-0 mb-4 sm:mb-5 group/message", // Added group/message for edit button visibility
+                "px-0 mb-4 sm:mb-5 group/message",
                 isUser ? "flex justify-end" : "flex justify-start" 
             )}
         >
@@ -101,7 +101,7 @@ export const Message: React.FC<MessageProps> = ({
                 )}>
                     
                     {isUser ? (
-                        <div className="relative">
+                        <>
                             <div className="text-base font-medium break-words whitespace-pre-wrap text-neutral-900 dark:text-neutral-100"> 
                                 <MarkdownRenderer content={message.content} />
                             </div>
@@ -110,7 +110,7 @@ export const Message: React.FC<MessageProps> = ({
                                     initial={{ opacity: 0, y: 5 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 5 }}
-                                    className="absolute -bottom-2 right-0 opacity-0 group-hover/message:opacity-100 transition-opacity duration-200"
+                                    className="mt-1 self-end opacity-0 group-hover/message:opacity-100 transition-opacity duration-200"
                                 >
                                     <Button
                                         variant="ghost"
@@ -123,7 +123,7 @@ export const Message: React.FC<MessageProps> = ({
                                     </Button>
                                 </motion.div>
                             )}
-                        </div>
+                        </>
                     ) : isErrorMessage ? (
                         <ErrorMessage 
                             type={actualErrorType}
