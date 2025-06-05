@@ -29,7 +29,7 @@ import { SearchGroupId, searchGroups as allSearchGroupsConfig, cn, formatCurrenc
 import { 
     User, KeyRound, Palette, Settings, Brain, Mic, MessageSquareText, 
     Copy, Check, BarChart2, ExternalLink, Settings2 as SettingsIconLucide, Layers, Briefcase, Info, AlertTriangle, Package, Tag, ShieldCheck, Percent, ListChecks, Coffee, XIcon,
-    Volume2, RadioTower, LogOut, Save
+    Volume2, RadioTower, LogOut, Save, UploadCloud
 } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -99,6 +99,8 @@ interface SettingsDialogProps {
   onToggleSystemPromptButton: (enabled: boolean) => void;
   isAttachmentButtonEnabled: boolean;
   onToggleAttachmentButton: (enabled: boolean) => void;
+  isSpeechToTextEnabled: boolean; // Added this prop
+  onToggleSpeechToTextEnabled: (enabled: boolean) => void; // Added this prop
   enabledSearchGroupIds: SearchGroupId[];
   onToggleSearchGroup: (groupId: SearchGroupId) => void;
   elevenLabsApiKey: string | null;
@@ -178,6 +180,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   onToggleSystemPromptButton,
   isAttachmentButtonEnabled,
   onToggleAttachmentButton,
+  isSpeechToTextEnabled, // Destructure new prop
+  onToggleSpeechToTextEnabled, // Destructure new prop
   enabledSearchGroupIds,
   onToggleSearchGroup,
   elevenLabsApiKey,
@@ -374,6 +378,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="ch-toggle" className="text-sm cursor-pointer">Enable Chat History</Label><Switch id="ch-toggle" checked={isChatHistoryFeatureEnabled} onCheckedChange={onToggleChatHistoryFeature} /></div>
                   <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="sp-toggle" className="text-sm cursor-pointer">Show System Prompt Button</Label><Switch id="sp-toggle" checked={isSystemPromptButtonEnabled} onCheckedChange={onToggleSystemPromptButton} /></div>
                   <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="at-toggle" className="text-sm cursor-pointer">Show Attachment Button</Label><Switch id="at-toggle" checked={isAttachmentButtonEnabled} onCheckedChange={onToggleAttachmentButton} /></div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="stt-toggle" className="text-sm cursor-pointer">Enable Speech-to-Text Button</Label><Switch id="stt-toggle" checked={isSpeechToTextEnabled} onCheckedChange={onToggleSpeechToTextEnabled} /></div>
               </div>
               <Separator />
               <div className="space-y-3">
@@ -441,3 +446,4 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     </Dialog>
   );
 };
+

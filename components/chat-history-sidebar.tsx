@@ -1,3 +1,4 @@
+
 // components/chat-history-sidebar.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
@@ -11,8 +12,9 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trash2, MessageSquareText, History, LogOut, AlertTriangle } from 'lucide-react';
-import { ChatHistoryEntry, formatRelativeTime, cn } from '@/lib/utils';
+import { Trash2, MessageSquareText, History, LogOut, AlertTriangle, Download } from 'lucide-react';
+import { ChatHistoryEntry, formatRelativeTime, cn, SimpleMessage } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface ChatHistorySidebarProps {
   isOpen: boolean;
@@ -22,6 +24,30 @@ interface ChatHistorySidebarProps {
   onDeleteChat: (chatId: string) => void;
   onClearAllHistory: () => void;
 }
+
+const exportChatToJson = (messages: SimpleMessage[], title: string, timestamp: number) => {
+  try {
+    const sanitizedTitle = title.replace(/[^a-zA-Z0-9_.-]/g, '_').substring(0, 50) || "chat_export";
+    const dateStr = new Date(timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
+    const filename = `${sanitizedTitle}_${dateStr}.json`;
+    
+    const jsonStr = JSON.stringify(messages, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(`Chat "${title}" exported successfully as ${filename}`);
+  } catch (error) {
+    console.error("Error exporting chat:", error);
+    toast.error("Failed to export chat.");
+  }
+};
 
 export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
   isOpen,
@@ -58,18 +84,18 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="group relative"
+                  className="group relative flex items-center justify-between p-1 rounded-md hover:bg-accent dark:hover:bg-accent/50"
                 >
                   <Button
                     variant="ghost"
-                    className="w-full h-auto justify-start items-start text-left p-2.5 rounded-md hover:bg-accent dark:hover:bg-accent/50"
+                    className="w-full h-auto justify-start items-start text-left p-1.5 flex-1"
                     onClick={() => {
                       onLoadChat(entry.id);
                       onOpenChange(false); // Close sidebar on load
                     }}
                   >
                     <div className="flex flex-col gap-0.5 overflow-hidden">
-                      <span className="text-xs font-medium text-foreground truncate block max-w-[230px] sm:max-w-[280px]">
+                      <span className="text-xs font-medium text-foreground truncate block max-w-[180px] sm:max-w-[220px]">
                         {entry.title}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
@@ -77,18 +103,34 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                       </span>
                     </div>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 right-1.5 -translate-y-1/2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteChat(entry.id);
-                    }}
-                    aria-label="Delete chat"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                     <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exportChatToJson(entry.messages, entry.title, entry.timestamp);
+                        }}
+                        aria-label="Export chat"
+                        title="Export chat"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteChat(entry.id);
+                      }}
+                      aria-label="Delete chat"
+                       title="Delete chat"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -101,10 +143,9 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                     size="sm"
                     className="w-full"
                     onClick={() => {
-                        // Simple confirmation for now, could be a dialog later
                         if (window.confirm("Are you sure you want to clear all chat history? This action cannot be undone.")) {
                             onClearAllHistory();
-                            onOpenChange(false); // Close sidebar after clearing
+                            onOpenChange(false); 
                         }
                     }}
                 >
@@ -123,3 +164,4 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
 };
 
 ChatHistorySidebar.displayName = 'ChatHistorySidebar';
+
