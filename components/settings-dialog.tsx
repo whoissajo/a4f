@@ -40,12 +40,12 @@ interface ModelUsageDetail {
   last_used: number;
   input_tokens: number;
   output_tokens: number;
-  token_cost_usd: number;
+  token_cost_usd?: number; // Optional as it might not exist for all models/entries
+  image_cost_usd?: number; // Optional for image models
   total_requests: number;
   failed_requests: number;
   successful_requests: number;
-  image_count?: number;      // Optional for image models
-  image_cost_usd?: number;   // Optional for image models
+  image_count?: number;
 }
 
 // Updated AccountInfoForDisplay to reflect API structure
@@ -63,7 +63,6 @@ interface AccountInfoForDisplay {
     node_id?: string;
     is_enabled?: boolean;
     current_plan?: string;
-    // model_specific_usage is NOT here anymore
   };
   subscription_details?: {
     creation_date?: string;
@@ -82,7 +81,7 @@ interface AccountInfoForDisplay {
     requests_per_minute_limit?: number;
     requests_per_day_limit?: number;
   };
-  model_specific_usage?: Record<string, ModelUsageDetail>; // MOVED TO TOP LEVEL
+  model_specific_usage?: Record<string, ModelUsageDetail>; // Top-level property
 }
 
 
@@ -112,8 +111,8 @@ interface SettingsDialogProps {
   onToggleSystemPromptButton: (enabled: boolean) => void;
   isAttachmentButtonEnabled: boolean;
   onToggleAttachmentButton: (enabled: boolean) => void;
-  isSpeechToTextEnabled: boolean; // Added this prop
-  onToggleSpeechToTextEnabled: (enabled: boolean) => void; // Added this prop
+  isSpeechToTextEnabled: boolean; 
+  onToggleSpeechToTextEnabled: (enabled: boolean) => void; 
   enabledSearchGroupIds: SearchGroupId[];
   onToggleSearchGroup: (groupId: SearchGroupId) => void;
   elevenLabsApiKey: string | null;
@@ -193,8 +192,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   onToggleSystemPromptButton,
   isAttachmentButtonEnabled,
   onToggleAttachmentButton,
-  isSpeechToTextEnabled, // Destructure new prop
-  onToggleSpeechToTextEnabled, // Destructure new prop
+  isSpeechToTextEnabled, 
+  onToggleSpeechToTextEnabled, 
   enabledSearchGroupIds,
   onToggleSearchGroup,
   elevenLabsApiKey,
@@ -228,7 +227,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
 
   // --- Account Tab Content ---
-  const accInfo = accountInfo?.account_information; // This remains for general account_information
+  const accInfo = accountInfo?.account_information; 
   const subDetails = accountInfo?.subscription_details;
   const usageStats = accountInfo?.usage_statistics;
   const billingInfo = accountInfo?.billing_information;
@@ -242,16 +241,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const formatPlanName = (plan: string | undefined) => { if (!plan) return 'N/A'; const lp = plan.toLowerCase(); if (lp === 'pro') return 'Professional'; if (lp === 'basic') return 'Basic'; if (lp === 'free') return 'Free'; return plan.charAt(0).toUpperCase() + plan.slice(1); };
   const getMaskedApiKey = (key?: string) => { if (!key || key.length < 10) return key || "N/A"; return `${key.substring(0, 3)}••••••••${key.substring(key.length - 6)}`; };
   
-  const modelUsageData = accountInfo?.model_specific_usage; // Corrected: Access from top level
+  const modelUsageData = accountInfo?.model_specific_usage; 
 
   const maxLastUsedTimestamp = React.useMemo(() => {
-    if (!modelUsageData) return null; // Use modelUsageData directly
+    if (!modelUsageData || typeof modelUsageData !== 'object' || Object.keys(modelUsageData).length === 0) return null;
     const timestamps = Object.values(modelUsageData)
                         .map((usage: ModelUsageDetail) => usage.last_used) 
                         .filter(ts => typeof ts === 'number' && ts > 0);
     if (timestamps.length === 0) return null;
     return Math.max(...timestamps) * 1000; 
-  }, [modelUsageData]); // Depend on modelUsageData
+  }, [modelUsageData]); 
 
   const topModels = React.useMemo(() => {
     if (!modelUsageData || typeof modelUsageData !== 'object' || Object.keys(modelUsageData).length === 0) return [];
@@ -268,7 +267,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         }))
         .sort((a, b) => b.requests - a.requests)
         .slice(0, 5);
-  }, [modelUsageData]); // Depend on modelUsageData
+  }, [modelUsageData]);
 
   let apiKeyStatusString = "Unknown"; let apiKeyStatusType: 'active' | 'unknown' | 'inactive' = 'unknown'; if (accInfo && typeof accInfo.is_enabled !== 'undefined') { if (accInfo.is_enabled) { apiKeyStatusString = "Active"; apiKeyStatusType = 'active'; } else { apiKeyStatusString = "Inactive"; apiKeyStatusType = 'inactive'; } }
 
@@ -291,7 +290,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     toast.dismiss();
     toast.info(`${apiKeys[type].name} removed`, { description: type === 'a4f' ? "Provide key to use chat." : "Web search disabled." });
     if (type === 'tavily' && onSwitchToWebSearch) { 
-        // This might need adjustment based on exact desired behavior if removing Tavily key should auto-switch away from web.
+        onSwitchToWebSearch();
     }
   };
   // --- End API Keys Tab Content Helpers ---
@@ -345,14 +344,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       <DashboardCard title="API Key Details" icon={<KeyRound size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Information about your active API key."> <div className="space-y-0.5 text-xs"> <InfoRow label="Name" value={accInfo?.api_key_name || "Primary Key"} /> <div className="flex justify-between items-center py-1 text-xs"> <span className="text-muted-foreground dark:text-neutral-400">Key Preview:</span> <div className="flex items-center gap-1.5"> <span className="font-medium text-foreground dark:text-neutral-100 font-mono">{getMaskedApiKey(accInfo?.api_key)}</span> {accInfo?.api_key && <button onClick={() => copyApiKey(accInfo?.api_key)} className="text-muted-foreground dark:text-neutral-500 hover:text-primary dark:hover:text-primary-light transition-colors">{copiedKey ? <Check size={12}/> : <Copy size={12}/>}</button>} </div> </div> <InfoRow label="Account Registered" value={subDetails?.creation_date ? formatRelativeTime(subDetails.creation_date) : "N/A"} /> <InfoRow label="Last Used" value={maxLastUsedTimestamp ? formatRelativeTime(new Date(maxLastUsedTimestamp)) : "N/A"} /> <InfoRow label="Status" value={apiKeyStatusString} statusType={apiKeyStatusType} /> </div> <Button variant="outline" size="sm" className="w-full mt-3 text-xs font-medium dark:bg-[oklch(0.17_0.025_240)] dark:border-[oklch(0.28_0.025_240)] dark:text-neutral-200 dark:hover:bg-[oklch(0.2_0.015_240)]"> <SettingsIconLucide size={12} className="mr-1.5" /> Manage API Key </Button> </DashboardCard>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 overflow-hidden mt-2">
-                      <DashboardCard title="Model Usage (Top 5 by Requests)" icon={<Layers size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Your most frequently used models."> {topModels.length > 0 ? <div className="space-y-2.5 text-xs"> {topModels.map(m => { const sr = m.r > 0 ? (m.s / m.r) * 100 : 0; return ( <div key={m.id} className="border-b border-border/30 dark:border-[oklch(0.25_0.02_240)]/40 pb-2 last:border-0 last:pb-0"> <div className="flex justify-between items-center mb-0.5"> <span className="font-medium text-foreground dark:text-neutral-100 truncate w-3/5 text-[11px] break-all" title={m.id}>{m.id}</span> <span className={cn("text-[10px] font-semibold", sr >= 75 ? "text-[var(--status-active-text-light)] dark:text-[var(--status-active-text-dark)]" : "text-[var(--status-loss-text-light)] dark:text-[var(--status-loss-text-dark)]")}>{m.s}/{m.r} reqs</span> </div> <Progress value={sr} className={cn("h-1 rounded-sm mb-1", sr >= 75 ? "[&>div]:bg-[var(--progress-success)]" : "[&>div]:bg-[var(--progress-loss)]")} /> <div className="flex justify-between items-center text-[10px] text-muted-foreground dark:text-neutral-400 mt-1"> <span>Cost: ${m.c.toFixed(8)}</span> {m.lu && <span>Used: {formatSimpleDate(m.lu)}</span>} </div> </div> ); })} </div> : <p className="text-xs text-muted-foreground dark:text-neutral-400">No model usage data available.</p>} </DashboardCard>
+                      <DashboardCard title="Model Usage (Top 5 by Requests)" icon={<Layers size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Your most frequently used models."> {topModels.length > 0 ? <div className="space-y-2.5 text-xs"> {topModels.map(m => { const sr = m.requests > 0 ? (m.successful / m.requests) * 100 : 0; return ( <div key={m.id} className="border-b border-border/30 dark:border-[oklch(0.25_0.02_240)]/40 pb-2 last:border-0 last:pb-0"> <div className="flex justify-between items-center mb-0.5"> <span className="font-medium text-foreground dark:text-neutral-100 truncate w-3/5 text-[11px] break-all" title={m.id}>{m.id}</span> <span className={cn("text-[10px] font-semibold", sr >= 75 ? "text-[var(--status-active-text-light)] dark:text-[var(--status-active-text-dark)]" : "text-[var(--status-loss-text-light)] dark:text-[var(--status-loss-text-dark)]")}>{m.successful}/{m.requests} reqs</span> </div> <Progress value={sr} className={cn("h-1 rounded-sm mb-1", sr >= 75 ? "[&>div]:bg-[var(--progress-success)]" : "[&>div]:bg-[var(--progress-loss)]")} /> <div className="flex justify-between items-center text-[10px] text-muted-foreground dark:text-neutral-400 mt-1"> <span>Cost: ${m.cost.toFixed(8)}</span> {m.lastUsed && <span>Used: {formatSimpleDate(m.lastUsed)}</span>} </div> </div> ); })} </div> : <p className="text-xs text-muted-foreground dark:text-neutral-400">No model usage data available.</p>} </DashboardCard>
                       <DashboardCard title="Usage Cost" icon={<Briefcase size={14} className="text-muted-foreground dark:text-neutral-400"/>} titleExtra="Current estimated costs."> <div className="mb-2"> <p className="text-xs text-muted-foreground dark:text-neutral-400">Est. Token Cost (USD):</p> <p className="text-2xl sm:text-3xl font-bold text-foreground dark:text-neutral-100 my-0.5">{formatCurrency(billingInfo?.cumulative_token_cost_usd, 'USD', {maximumFractionDigits: (billingInfo?.cumulative_token_cost_usd ?? 0) > 0.01 || (billingInfo?.cumulative_token_cost_usd ?? 0) === 0 ? 2 : 4})}</p> </div> {subDetails?.effective_days_remaining !== undefined && <InfoRow label={`${formatPlanName(accInfo?.current_plan)} Plan - Days left`} value={`${subDetails.effective_days_remaining} days`} valueClassName="text-xs" />} <Button variant="outline" size="sm" className="w-full mt-3 text-xs font-medium dark:bg-[oklch(0.17_0.025_240)] dark:border-[oklch(0.28_0.025_240)] dark:text-neutral-200 dark:hover:bg-[oklch(0.2_0.015_240)]"> <ExternalLink size={12} className="mr-1.5" /> View Pricing / Manage Plan </Button> <Button size="sm" className="w-full mt-1.5 text-xs a4f-gradient-button-yellow font-semibold"> <Coffee size={12} className="mr-1.5" /> Buy me a coffee </Button> </DashboardCard>
                   </div>
                   <Separator className="my-6" />
                   <Button 
                     variant="destructive" 
                     className="w-full sm:w-auto"
-                    onClick={(e) => { // Add stopPropagation here
+                    onClick={(e) => { 
                         e.stopPropagation();
                         handleLogoutConfirmed();
                     }}
@@ -371,7 +370,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                    <Button 
                     variant="outline" 
                     className="mt-4"
-                    onClick={(e) => { // Add stopPropagation here
+                    onClick={(e) => { 
                         e.stopPropagation();
                         handleLogoutConfirmed();
                     }}
@@ -492,6 +491,3 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     </Dialog>
   );
 };
-
-
-    
