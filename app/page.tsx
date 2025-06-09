@@ -6,7 +6,7 @@ import '@/styles/custom-scrollbar.css';
 import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
-import Spline from '@splinetool/react-spline/next';
+import Spline from '@splinetool/react-spline'; // Changed import path
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
@@ -220,10 +220,13 @@ const HomeContent = () => {
                             transition={{ duration: 0.5 }}
                             className="text-center flex flex-col items-center"
                         >
-                            <div className="w-full max-w-lg h-64 sm:h-72 md:h-80 mb-6 rounded-lg overflow-hidden shadow-xl border border-border dark:border-neutral-800 bg-card dark:bg-neutral-900/30">
+                             <div 
+                                title="Greeting Robot by Spline on Spline.design"
+                                className="w-full max-w-lg h-64 sm:h-72 md:h-80 mb-6 rounded-lg overflow-hidden shadow-xl border border-border dark:border-neutral-800 bg-card dark:bg-neutral-900/30"
+                             >
                                 <Spline
                                     scene="https://prod.spline.design/7-FObu0Kc9MZBedS/scene.splinecode" 
-                                    className="block" // className is often used to ensure proper layout
+                                    className="block"
                                 />
                             </div>
                             <h1 className="text-2xl sm:text-4xl mb-4 sm:mb-6 text-neutral-800 dark:text-neutral-100 font-syne">
