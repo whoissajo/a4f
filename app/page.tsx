@@ -4,9 +4,8 @@ import 'katex/dist/katex.min.css';
 import '@/styles/custom-scrollbar.css';
 
 import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
-import Image from 'next/image';
+import Image from 'next/image'; // Keep this import
 import { useTheme } from 'next-themes';
-import Spline from '@splinetool/react-spline';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
@@ -68,9 +67,9 @@ const HomeContent = () => {
         selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, 
         isListening, 
         handleToggleListening,
-        editingMessageId, 
-        handleStartEdit,   
-        handleCancelEdit,  
+        editingMessageId, // New
+        handleStartEdit,   // New
+        handleCancelEdit,  // New
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
@@ -149,10 +148,12 @@ const HomeContent = () => {
             <SettingsDialog
                 isOpen={isSettingsDialogOpen}
                 onOpenChange={setIsSettingsDialogOpen}
+                // Account props
                 accountInfo={accountInfo}
                 isAccountLoading={isAccountLoading}
                 onRefreshAccount={fetchAccountInfo}
                 onLogoutAndReset={handleFullReset} 
+                // API Keys props
                 apiKeys={apiKeys}
                 setApiKey={setApiKeyByType}
                 isKeysLoaded={isKeysLoaded}
@@ -164,6 +165,7 @@ const HomeContent = () => {
                         toast.info("Web search group is disabled in customization settings.");
                     }
                 }}
+                // Customization props
                 isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
                 onToggleChatHistoryFeature={setIsChatHistoryFeatureEnabled}
                 isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
@@ -218,17 +220,8 @@ const HomeContent = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
-                            className="text-center flex flex-col items-center"
+                            className="text-center"
                         >
-                             <div 
-                                title="Greeting Robot by Spline on Spline.design"
-                                className="w-full max-w-lg h-64 sm:h-72 md:h-80 mb-6 rounded-lg overflow-hidden shadow-xl border border-border dark:border-neutral-800 bg-card dark:bg-neutral-900/30"
-                             >
-                                <Spline
-                                    scene="https://prod.spline.design/7-FObu0Kc9MZBedS/scene.splinecode" 
-                                    className="block"
-                                />
-                            </div>
                             <h1 className="text-2xl sm:text-4xl mb-4 sm:mb-6 text-neutral-800 dark:text-neutral-100 font-syne">
                                 What do you want to explore?
                             </h1>
@@ -255,7 +248,7 @@ const HomeContent = () => {
                                 availableSearchGroups={effectiveSearchGroups}
                                 onGroupSelect={(group: SearchGroup) => {
                                     if (!enabledSearchGroupIds.includes(group.id)){
-                                        toast.error(\`\${group.name} is currently disabled. You can enable it in Customization settings.\`);
+                                        toast.error(`${group.name} is currently disabled. You can enable it in Customization settings.`);
                                         return;
                                     }
                                     handleGroupSelection(group);
@@ -348,7 +341,7 @@ const HomeContent = () => {
                             availableSearchGroups={effectiveSearchGroups}
                             onGroupSelect={(group: SearchGroup) => {
                                 if (!enabledSearchGroupIds.includes(group.id)){
-                                    toast.error(\`\${group.name} is currently disabled. You can enable it in Customization settings.\`);
+                                    toast.error(`${group.name} is currently disabled. You can enable it in Customization settings.`);
                                     return;
                                 }
                                 handleGroupSelection(group);

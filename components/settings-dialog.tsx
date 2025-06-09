@@ -35,7 +35,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 
-// Types from AccountDialog
+// Type for individual model usage details
+interface ModelUsageDetail {
+  last_used: number;
+  input_tokens: number;
+  output_tokens: number;
+  token_cost_usd: number;
+  total_requests: number;
+  failed_requests: number;
+  successful_requests: number;
+  image_count?: number;      // Optional for image models
+  image_cost_usd?: number;   // Optional for image models
+}
+
+// Updated AccountInfoForDisplay to reflect API structure
 interface AccountInfoForDisplay {
   account_information?: {
     username?: string;
@@ -50,7 +63,7 @@ interface AccountInfoForDisplay {
     node_id?: string;
     is_enabled?: boolean;
     current_plan?: string;
-    model_specific_usage?: Record<string, any>;
+    // model_specific_usage is NOT here anymore
   };
   subscription_details?: {
     creation_date?: string;
@@ -69,6 +82,7 @@ interface AccountInfoForDisplay {
     requests_per_minute_limit?: number;
     requests_per_day_limit?: number;
   };
+  model_specific_usage?: Record<string, ModelUsageDetail>; // MOVED TO TOP LEVEL
 }
 
 
@@ -214,7 +228,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
 
   // --- Account Tab Content ---
-  const accInfo = accountInfo?.account_information;
+  const accInfo = accountInfo?.account_information; // This remains for general account_information
   const subDetails = accountInfo?.subscription_details;
   const usageStats = accountInfo?.usage_statistics;
   const billingInfo = accountInfo?.billing_information;
@@ -227,8 +241,35 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   };
   const formatPlanName = (plan: string | undefined) => { if (!plan) return 'N/A'; const lp = plan.toLowerCase(); if (lp === 'pro') return 'Professional'; if (lp === 'basic') return 'Basic'; if (lp === 'free') return 'Free'; return plan.charAt(0).toUpperCase() + plan.slice(1); };
   const getMaskedApiKey = (key?: string) => { if (!key || key.length < 10) return key || "N/A"; return `${key.substring(0, 3)}••••••••${key.substring(key.length - 6)}`; };
-  const maxLastUsedTimestamp = React.useMemo(() => { if (!accInfo?.model_specific_usage) return null; const ts = Object.values(accInfo.model_specific_usage).map((u: any) => u.last_used).filter(t => typeof t === 'number' && t > 0); if (ts.length === 0) return null; return Math.max(...ts) * 1000; }, [accInfo]);
-  const topModels = React.useMemo(() => { if (!accInfo?.model_specific_usage) return []; const u = accInfo.model_specific_usage; return Object.entries(u).map(([id, d]: [string, any]) => ({ id, r: d.total_requests || 0, s: d.successful_requests || 0, c: d.token_cost_usd || 0, lu: d.last_used && d.last_used > 0 ? new Date(d.last_used * 1000) : null, it: d.input_tokens || 0, ot: d.output_tokens || 0 })).sort((a, b) => b.r - a.r).slice(0, 5); }, [accInfo]);
+  
+  const modelUsageData = accountInfo?.model_specific_usage; // Corrected: Access from top level
+
+  const maxLastUsedTimestamp = React.useMemo(() => {
+    if (!modelUsageData) return null; // Use modelUsageData directly
+    const timestamps = Object.values(modelUsageData)
+                        .map((usage: ModelUsageDetail) => usage.last_used) 
+                        .filter(ts => typeof ts === 'number' && ts > 0);
+    if (timestamps.length === 0) return null;
+    return Math.max(...timestamps) * 1000; 
+  }, [modelUsageData]); // Depend on modelUsageData
+
+  const topModels = React.useMemo(() => {
+    if (!modelUsageData || typeof modelUsageData !== 'object' || Object.keys(modelUsageData).length === 0) return [];
+    
+    return Object.entries(modelUsageData)
+        .map(([modelId, data]: [string, ModelUsageDetail]) => ({
+            id: modelId,
+            requests: data.total_requests || 0,
+            successful: data.successful_requests || 0,
+            cost: (typeof data.token_cost_usd === 'number' ? data.token_cost_usd : (typeof data.image_cost_usd === 'number' ? data.image_cost_usd : 0)),
+            lastUsed: data.last_used && data.last_used > 0 ? new Date(data.last_used * 1000) : null,
+            inputTokens: data.input_tokens || 0,
+            outputTokens: data.output_tokens || 0
+        }))
+        .sort((a, b) => b.requests - a.requests)
+        .slice(0, 5);
+  }, [modelUsageData]); // Depend on modelUsageData
+
   let apiKeyStatusString = "Unknown"; let apiKeyStatusType: 'active' | 'unknown' | 'inactive' = 'unknown'; if (accInfo && typeof accInfo.is_enabled !== 'undefined') { if (accInfo.is_enabled) { apiKeyStatusString = "Active"; apiKeyStatusType = 'active'; } else { apiKeyStatusString = "Inactive"; apiKeyStatusType = 'inactive'; } }
 
   const renderAccountSkeleton = () => ( <div className="p-4 sm:p-5 space-y-4 sm:space-y-5"> <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5"> <div className="lg:col-span-1 bg-card dark:bg-[oklch(0.22_0.03_240)] p-4 sm:p-5 rounded-xl border border-border dark:border-[oklch(0.2_0.01_240)] shadow-md"> <Skeleton className="h-5 w-3/5 mb-3" /> <div className="space-y-2.5">{[...Array(4)].map((_, i) => <Skeleton key={`info-skel-${i}`} className="h-4 w-full" />)}</div> </div> <div className="lg:col-span-2 bg-card dark:bg-[oklch(0.22_0.03_240)] p-4 sm:p-5 rounded-xl border border-border dark:border-[oklch(0.2_0.01_240)] shadow-md flex items-center"> <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-full mr-3 sm:mr-4" /> <div className="flex-1 space-y-2"> <Skeleton className="h-6 w-3/5" /> <Skeleton className="h-4 w-4/5" /> <Skeleton className="h-4 w-2/5 mt-1" /> </div> </div> </div> <div className="bg-card dark:bg-[oklch(0.22_0.03_240)] p-4 sm:p-5 rounded-xl border border-border dark:border-[oklch(0.2_0.01_240)] shadow-md"> <Skeleton className="h-5 w-1/4 mb-4" /> <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[...Array(4)].map((_, i) => <Skeleton key={`plan-detail-skel-${i}`} className="h-8 w-full" />)}</div> </div> {[...Array(2)].map((_, rI) => ( <div key={`skel-row-${rI}`} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5"> {[...Array(2)].map((_, cI) => ( <div key={`skel-card-${rI}-${cI}`} className="bg-card dark:bg-[oklch(0.22_0.03_240)] p-4 sm:p-5 rounded-xl border border-border dark:border-[oklch(0.2_0.01_240)] shadow-md"> <Skeleton className="h-5 w-1/2 mb-3" /> <div className="space-y-2.5">{[...Array(cI === 0 && rI === 0 ? 5 : (cI === 1 && rI === 0 ? 3 : (rI === 1 && cI === 0 ? 5 : 2)))].map((_, j) => <Skeleton key={`inner-skel-${rI}-${cI}-${j}`} className="h-4 w-full" />)} { (cI === 1 && rI === 0 ) && <Skeleton className="h-8 w-full mt-3"/> } { (rI === 1 && cI === 1) && <> <Skeleton className="h-8 w-full mt-3"/> <Skeleton className="h-8 w-full mt-2"/> </> } </div> </div> ))} </div> ))} </div> );
@@ -311,7 +352,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <Button 
                     variant="destructive" 
                     className="w-full sm:w-auto"
-                    onClick={handleLogoutConfirmed}
+                    onClick={(e) => { // Add stopPropagation here
+                        e.stopPropagation();
+                        handleLogoutConfirmed();
+                    }}
                   >
                     <LogOut size={16} className="mr-2"/>
                     Logout & Reset App
@@ -327,7 +371,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                    <Button 
                     variant="outline" 
                     className="mt-4"
-                    onClick={handleLogoutConfirmed}
+                    onClick={(e) => { // Add stopPropagation here
+                        e.stopPropagation();
+                        handleLogoutConfirmed();
+                    }}
                   >
                     <LogOut size={16} className="mr-2"/>
                     Logout & Reset App
@@ -446,3 +493,5 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   );
 };
 
+
+    

