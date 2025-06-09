@@ -4,8 +4,9 @@ import 'katex/dist/katex.min.css';
 import '@/styles/custom-scrollbar.css';
 
 import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
-import Image from 'next/image'; // Keep this import
+import Image from 'next/image';
 import { useTheme } from 'next-themes';
+import Spline from '@splinetool/react-spline/next';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
@@ -67,9 +68,9 @@ const HomeContent = () => {
         selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, 
         isListening, 
         handleToggleListening,
-        editingMessageId, // New
-        handleStartEdit,   // New
-        handleCancelEdit,  // New
+        editingMessageId, 
+        handleStartEdit,   
+        handleCancelEdit,  
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
@@ -148,12 +149,10 @@ const HomeContent = () => {
             <SettingsDialog
                 isOpen={isSettingsDialogOpen}
                 onOpenChange={setIsSettingsDialogOpen}
-                // Account props
                 accountInfo={accountInfo}
                 isAccountLoading={isAccountLoading}
                 onRefreshAccount={fetchAccountInfo}
                 onLogoutAndReset={handleFullReset} 
-                // API Keys props
                 apiKeys={apiKeys}
                 setApiKey={setApiKeyByType}
                 isKeysLoaded={isKeysLoaded}
@@ -165,7 +164,6 @@ const HomeContent = () => {
                         toast.info("Web search group is disabled in customization settings.");
                     }
                 }}
-                // Customization props
                 isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
                 onToggleChatHistoryFeature={setIsChatHistoryFeatureEnabled}
                 isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
@@ -222,15 +220,11 @@ const HomeContent = () => {
                             transition={{ duration: 0.5 }}
                             className="text-center flex flex-col items-center"
                         >
-                            <div className="w-full max-w-lg h-64 sm:h-72 md:h-80 mb-6 rounded-lg overflow-hidden shadow-xl border border-border dark:border-neutral-800 bg-card dark:bg-neutral-900">
-                                <iframe
-                                    src='https://my.spline.design/genkubgreetingrobot-uOGcDFa0XewjOCx248w9dYNb/'
-                                    frameBorder='0'
-                                    width='100%'
-                                    height='100%'
-                                    title="Genk UB Greeting Robot 3D"
-                                    className="block"
-                                ></iframe>
+                            <div className="w-full max-w-lg h-64 sm:h-72 md:h-80 mb-6 rounded-lg overflow-hidden shadow-xl border border-border dark:border-neutral-800 bg-card dark:bg-neutral-900/30">
+                                <Spline
+                                    scene="https://prod.spline.design/7-FObu0Kc9MZBedS/scene.splinecode" 
+                                    className="block" // className is often used to ensure proper layout
+                                />
                             </div>
                             <h1 className="text-2xl sm:text-4xl mb-4 sm:mb-6 text-neutral-800 dark:text-neutral-100 font-syne">
                                 What do you want to explore?
