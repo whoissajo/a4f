@@ -6,7 +6,7 @@ import '@/styles/custom-scrollbar.css';
 import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
-import Spline from '@splinetool/react-spline'; // Changed import path
+import Spline from '@splinetool/react-spline';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
@@ -255,7 +255,7 @@ const HomeContent = () => {
                                 availableSearchGroups={effectiveSearchGroups}
                                 onGroupSelect={(group: SearchGroup) => {
                                     if (!enabledSearchGroupIds.includes(group.id)){
-                                        toast.error(`${group.name} is currently disabled. You can enable it in Customization settings.`);
+                                        toast.error(\`\${group.name} is currently disabled. You can enable it in Customization settings.\`);
                                         return;
                                     }
                                     handleGroupSelection(group);
@@ -348,7 +348,7 @@ const HomeContent = () => {
                             availableSearchGroups={effectiveSearchGroups}
                             onGroupSelect={(group: SearchGroup) => {
                                 if (!enabledSearchGroupIds.includes(group.id)){
-                                    toast.error(`${group.name} is currently disabled. You can enable it in Customization settings.`);
+                                    toast.error(\`\${group.name} is currently disabled. You can enable it in Customization settings.\`);
                                     return;
                                 }
                                 handleGroupSelection(group);
