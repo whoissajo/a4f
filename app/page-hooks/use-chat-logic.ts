@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { fallbackModels } from '@/app/page-config/model-fallbacks';
@@ -8,6 +7,8 @@ import { useChatStreamHandler } from './chat-logic/useChatStreamHandler';
 import type { SimpleMessage, Attachment, SearchGroupId, ChatHistoryEntry, SearchGroup } from '@/lib/utils';
 import { searchGroups as allSearchGroupsConfig } from '@/lib/utils';
 import { toast } from 'sonner';
+
+type SpeechRecognitionEvent = any;
 
 const MAX_HISTORY_LENGTH = 10;
 const CHAT_HISTORY_KEY = 'a4f-chat-history';
@@ -93,16 +94,17 @@ export function useChatLogic() {
         }
 
         const desiredVoiceNames = [
-          'af-ZA-AdriNeural',
-          'af-ZA-WillemNeural',
-          'am-ET-AmehaNeural',
+          'en-GB-MaisieNeural',
+          'en-GB-RyanNeural',
+          'en-GB-SoniaNeural',
+          'en-US-EmmaNeural',
+          'en-US-EricNeural'
         ];
-        const desiredLangsForFallback = ['af-ZA', 'am-ET'];
+        const desiredLangsForFallback = ['en-GB', 'en-US'];
         const keywordMap: Record<string, string[]> = {
-          'af-ZA': ['Adri', 'Willem'],
-          'am-ET': ['Ameha'],
+          'en-GB': ['Maisie', 'Ryan', 'Sonia'],
+          'en-US': ['Eric' , 'Emma'],
         };
-
         let matchedVoices: SpeechSynthesisVoice[] = [];
 
         // 1. Exact name or URI match
@@ -375,7 +377,7 @@ export function useChatLogic() {
       };
 
       let finalTranscript = '';
-      recognitionRef.current.onresult = (event) => {
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         let interimTranscript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
@@ -391,7 +393,7 @@ export function useChatLogic() {
         }
       };
 
-      recognitionRef.current.onerror = (event) => {
+      recognitionRef.current.onerror = (event: any) => {
         toast.dismiss("stt-listening-toast");
         if (event.error === 'no-speech') {
           toast.error("No speech detected. Please try again.", {id: "stt-error-toast"});

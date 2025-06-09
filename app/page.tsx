@@ -220,8 +220,18 @@ const HomeContent = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
-                            className="text-center"
+                            className="text-center flex flex-col items-center"
                         >
+                            <div className="w-full max-w-lg h-64 sm:h-72 md:h-80 mb-6 rounded-lg overflow-hidden shadow-xl border border-border dark:border-neutral-800 bg-card dark:bg-neutral-900">
+                                <iframe
+                                    src='https://my.spline.design/genkubgreetingrobot-uOGcDFa0XewjOCx248w9dYNb/'
+                                    frameBorder='0'
+                                    width='100%'
+                                    height='100%'
+                                    title="Genk UB Greeting Robot 3D"
+                                    className="block"
+                                ></iframe>
+                            </div>
                             <h1 className="text-2xl sm:text-4xl mb-4 sm:mb-6 text-neutral-800 dark:text-neutral-100 font-syne">
                                 What do you want to explore?
                             </h1>

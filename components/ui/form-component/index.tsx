@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect, ReactNode, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -52,6 +51,7 @@ interface FormComponentProps {
     isListening: boolean;
     editingMessageId: string | null; // New
     handleCancelEdit: () => void;   // New
+    handleToggleListening: () => void;
 }
 
 const FormComponent: React.FC<FormComponentProps> = ({
@@ -420,4 +420,3 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
 export default FormComponent;
 
-    

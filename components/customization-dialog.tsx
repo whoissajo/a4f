@@ -1,4 +1,3 @@
-
 // components/customization-dialog.tsx
 import React, { useState } from 'react';
 import {
@@ -17,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
-import { SearchGroupId, searchGroups as allSearchGroupsConfig, ApiKeyType } from '@/lib/utils';
+import { SearchGroupId, searchGroups as allSearchGroupsConfig } from '@/lib/utils';
 import { Settings, History, MessageSquareText, Mic, Globe, Book, YoutubeIcon, Code, Bot as BuddyIcon, Image as ImageIcon, FileText, Paperclip, KeyRound, RadioTower, Volume2, Brain, Gauge } from 'lucide-react';
 import { toast } from 'sonner';
 
