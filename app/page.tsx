@@ -4,8 +4,9 @@ import 'katex/dist/katex.min.css';
 import '@/styles/custom-scrollbar.css';
 
 import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
-import Image from 'next/image'; // Keep this import
+import Image from 'next/image';
 import { useTheme } from 'next-themes';
+import dynamic from 'next/dynamic';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
@@ -18,9 +19,10 @@ import { ApiKeyNotification } from '@/components/ui/form-component/notifications
 import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
 import Messages from '@/components/messages';
-import { SimpleApiKeyInput } from '@/components/api-keys'; 
-import { SettingsDialog } from '@/components/settings-dialog'; 
+import { SimpleApiKeyInput } from '@/components/api-keys';
+import { SettingsDialog } from '@/components/settings-dialog';
 import { ChatHistorySidebar } from '@/components/chat-history-sidebar';
+import { SpotlightCursor } from '@/components/ui/spotlight-cursor';
 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { cn } from '@/lib/utils';
@@ -29,6 +31,11 @@ import { useChatLogic } from '@/app/page-hooks/use-chat-logic';
 import { useScrollManagement } from '@/app/page-hooks/use-scroll-management';
 import { PageNavbar } from '@/app/page-components/page-navbar';
 import { DateTimeWidgets } from '@/app/page-components/date-time-widgets';
+
+const Spline = dynamic(() => import('@splinetool/react-spline'), {
+  ssr: false,
+  loading: () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>Loading 3D Scene...</p></div>,
+});
 
 
 const HomeContent = () => {
@@ -53,29 +60,29 @@ const HomeContent = () => {
         isTavilyKeyAvailable, handleGroupSelection,
         fileInputRef, inputRef, systemPromptInputRef,
         chatHistory, loadChatFromHistory, deleteChatFromHistory, clearAllChatHistory,
-        handleFullReset, 
+        handleFullReset,
         isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled,
-        enabledSearchGroupIds, 
+        enabledSearchGroupIds,
         toggleSearchGroup,
         isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
-        isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled, 
-        isAttachmentButtonEnabled, setIsAttachmentButtonEnabled, 
+        isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled,
+        isAttachmentButtonEnabled, setIsAttachmentButtonEnabled,
         isSpeechToTextEnabled, setIsSpeechToTextEnabled,
-        ttsProvider, setTtsProvider, 
+        ttsProvider, setTtsProvider,
         browserTtsSpeed, setBrowserTtsSpeed,
-        availableBrowserVoices, 
-        selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, 
-        isListening, 
+        availableBrowserVoices,
+        selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI,
+        isListening,
         handleToggleListening,
-        editingMessageId, // New
-        handleStartEdit,   // New
-        handleCancelEdit,  // New
+        editingMessageId,
+        handleStartEdit,
+        handleCancelEdit,
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
     const [isGroupSelectorExpanded, setIsGroupSelectorExpanded] = useState(false);
     const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
-    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false); 
+    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 
     useEffect(() => {
       const streamingMessage = messages.find(msg => msg.isStreaming);
@@ -112,10 +119,11 @@ const HomeContent = () => {
 
     return (
         <div className="flex flex-col font-sans items-center min-h-screen bg-background text-foreground transition-colors duration-500">
+            <SpotlightCursor />
             <PageNavbar
                 hasMessages={messages.length > 0 || hasSubmitted}
                 onNewChat={resetChatState}
-                onOpenSettingsDialog={() => setIsSettingsDialogOpen(true)} 
+                onOpenSettingsDialog={() => setIsSettingsDialogOpen(true)}
                 onToggleHistorySidebar={() => setIsHistorySidebarOpen(prev => !prev)}
                 isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
             />
@@ -130,34 +138,32 @@ const HomeContent = () => {
                     setIsHistorySidebarOpen(false);
                   }}
                   onDeleteChat={deleteChatFromHistory}
-                  onClearAllHistory={() => { 
+                  onClearAllHistory={() => {
                     clearAllChatHistory();
-                    setIsHistorySidebarOpen(false); 
+                    setIsHistorySidebarOpen(false);
                   }}
                 />
             )}
 
             <SimpleApiKeyInput
                 apiKey={apiKey}
-                setApiKey={setApiKey} 
+                setApiKey={setApiKey}
                 isKeyLoaded={isKeyLoaded}
                 isOpen={showSimpleApiKeyInput}
                 onOpenChange={setShowSimpleApiKeyInput}
             />
-            
+
             <SettingsDialog
                 isOpen={isSettingsDialogOpen}
                 onOpenChange={setIsSettingsDialogOpen}
-                // Account props
                 accountInfo={accountInfo}
                 isAccountLoading={isAccountLoading}
                 onRefreshAccount={fetchAccountInfo}
-                onLogoutAndReset={handleFullReset} 
-                // API Keys props
+                onLogoutAndReset={handleFullReset}
                 apiKeys={apiKeys}
                 setApiKey={setApiKeyByType}
                 isKeysLoaded={isKeysLoaded}
-                onSwitchToWebSearch={() => { 
+                onSwitchToWebSearch={() => {
                     const webGroup = allSearchGroupsConfig.find(g => g.id === 'web');
                     if (webGroup && enabledSearchGroupIds.includes('web')) {
                         handleGroupSelection(webGroup);
@@ -165,7 +171,6 @@ const HomeContent = () => {
                         toast.info("Web search group is disabled in customization settings.");
                     }
                 }}
-                // Customization props
                 isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
                 onToggleChatHistoryFeature={setIsChatHistoryFeatureEnabled}
                 isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
@@ -199,7 +204,7 @@ const HomeContent = () => {
                     "w-full max-w-[26rem] sm:max-w-2xl space-y-6 px-2 sm:px-0 mx-auto transition-all duration-300 flex-grow flex flex-col",
                     showCenteredForm && showChatInterface ? "justify-center -mt-16" : "justify-start"
                 )}>
-                    {!apiKey && isKeyLoaded && !showSimpleApiKeyInput && ( 
+                    {!apiKey && isKeyLoaded && !showSimpleApiKeyInput && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -220,8 +225,14 @@ const HomeContent = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
-                            className="text-center"
+                            className="flex flex-col items-center text-center"
                         >
+                             <div
+                                title="Spline 3D Interactive Background"
+                                className="w-full h-[250px] sm:h-[300px] md:h-[350px] mb-6 rounded-lg overflow-hidden shadow-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50"
+                              >
+                                <Spline scene="https://prod.spline.design/7-FObu0Kc9MZBedS/scene.splinecode" />
+                              </div>
                             <h1 className="text-2xl sm:text-4xl mb-4 sm:mb-6 text-neutral-800 dark:text-neutral-100 font-syne">
                                 What do you want to explore?
                             </h1>
@@ -374,5 +385,3 @@ const Home = () => {
 };
 
 export default Home;
-
-    
