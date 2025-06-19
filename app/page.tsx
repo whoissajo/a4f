@@ -1,4 +1,5 @@
 
+
 "use client";
 import 'katex/dist/katex.min.css';
 import '@/styles/custom-scrollbar.css';
@@ -72,7 +73,7 @@ const HomeContent = () => {
         isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
         isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled,
         isAttachmentButtonEnabled, setIsAttachmentButtonEnabled,
-        isSpeechToTextEnabled, setIsSpeechToTextEnabled,
+        isSpeechToTextEnabled, setIsSpeechToTextEnabled, // Corrected: from useChatLogic
         ttsProvider, setTtsProvider,
         browserTtsSpeed, setBrowserTtsSpeed,
         availableBrowserVoices,
@@ -184,7 +185,7 @@ const HomeContent = () => {
                 isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                 onToggleAttachmentButton={setIsAttachmentButtonEnabled}
                 isSpeechToTextEnabled={isSpeechToTextEnabled}
-                onToggleSpeechToTextEnabled={onToggleSpeechToTextEnabled}
+                onToggleSpeechToTextEnabled={setIsSpeechToTextEnabled}
                 enabledSearchGroupIds={enabledSearchGroupIds}
                 onToggleSearchGroup={toggleSearchGroup}
                 elevenLabsApiKey={apiKeys.elevenlabs.key}
@@ -236,7 +237,7 @@ const HomeContent = () => {
                                 className="w-full h-[250px] sm:h-[300px] md:h-[350px] mb-6 rounded-lg overflow-hidden shadow-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50"
                               >
                                 {/* <Spline scene="https://prod.spline.design/7-FObu0Kc9MZBedS/scene.splinecode" /> */}
-                                <SplinePlaceholder />
+                                <SplinePlaceholder /> {/* Using placeholder due to import issues */}
                               </div>
                             <h1 className="text-2xl sm:text-4xl mb-4 sm:mb-6 text-neutral-800 dark:text-neutral-100 font-syne">
                                 What do you want to explore?
@@ -390,4 +391,5 @@ const Home = () => {
 };
 
 export default Home;
+
 
