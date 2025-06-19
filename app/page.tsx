@@ -8,6 +8,13 @@ import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import dynamic from 'next/dynamic';
 
+// import Spline from '@splinetool/react-spline'; // Temporarily commented out
+// const Spline = dynamic(() => import('@splinetool/react-spline/Spline'), { // Also tried @splinetool/react-spline and @splinetool/react-spline/next
+//   ssr: false,
+//   loading: () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>Loading 3D Scene...</p></div>,
+// });
+
+
 import { AnimatePresence, motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
 import { ArrowDown } from '@phosphor-icons/react';
@@ -32,10 +39,8 @@ import { useScrollManagement } from '@/app/page-hooks/use-scroll-management';
 import { PageNavbar } from '@/app/page-components/page-navbar';
 import { DateTimeWidgets } from '@/app/page-components/date-time-widgets';
 
-const Spline = dynamic(() => import('@splinetool/react-spline'), {
-  ssr: false,
-  loading: () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>Loading 3D Scene...</p></div>,
-});
+// Temporarily define a placeholder if Spline cannot be imported, to avoid breaking JSX
+const SplinePlaceholder = () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>3D Scene Placeholder (Spline import issue)</p></div>;
 
 
 const HomeContent = () => {
@@ -179,7 +184,7 @@ const HomeContent = () => {
                 isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                 onToggleAttachmentButton={setIsAttachmentButtonEnabled}
                 isSpeechToTextEnabled={isSpeechToTextEnabled}
-                onToggleSpeechToTextEnabled={setIsSpeechToTextEnabled}
+                onToggleSpeechToTextEnabled={onToggleSpeechToTextEnabled}
                 enabledSearchGroupIds={enabledSearchGroupIds}
                 onToggleSearchGroup={toggleSearchGroup}
                 elevenLabsApiKey={apiKeys.elevenlabs.key}
@@ -230,7 +235,8 @@ const HomeContent = () => {
                                 title="Spline 3D Interactive Background"
                                 className="w-full h-[250px] sm:h-[300px] md:h-[350px] mb-6 rounded-lg overflow-hidden shadow-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50"
                               >
-                                <Spline scene="https://prod.spline.design/7-FObu0Kc9MZBedS/scene.splinecode" />
+                                {/* <Spline scene="https://prod.spline.design/7-FObu0Kc9MZBedS/scene.splinecode" /> */}
+                                <SplinePlaceholder />
                               </div>
                             <h1 className="text-2xl sm:text-4xl mb-4 sm:mb-6 text-neutral-800 dark:text-neutral-100 font-syne">
                                 What do you want to explore?
@@ -384,3 +390,4 @@ const Home = () => {
 };
 
 export default Home;
+
