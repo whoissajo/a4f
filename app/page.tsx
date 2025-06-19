@@ -32,7 +32,7 @@ import { useScrollManagement } from '@/app/page-hooks/use-scroll-management';
 import { PageNavbar } from '@/app/page-components/page-navbar';
 import { DateTimeWidgets } from '@/app/page-components/date-time-widgets';
 
-const Spline = dynamic(() => import('@splinetool/react-spline/next'), {
+const Spline = dynamic(() => import('@splinetool/react-spline'), {
   ssr: false,
   loading: () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>Loading 3D Scene...</p></div>,
 });
