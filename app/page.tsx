@@ -32,7 +32,7 @@ import { useScrollManagement } from '@/app/page-hooks/use-scroll-management';
 import { PageNavbar } from '@/app/page-components/page-navbar';
 import { DateTimeWidgets } from '@/app/page-components/date-time-widgets';
 
-const Spline = dynamic(() => import('@splinetool/react-spline'), {
+const Spline = dynamic(() => import('@splinetool/react-spline/next'), {
   ssr: false,
   loading: () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>Loading 3D Scene...</p></div>,
 });
@@ -112,7 +112,6 @@ const HomeContent = () => {
     const effectiveSearchGroups = useMemo(() => {
         return allSearchGroupsConfig.filter(g => g.show && enabledSearchGroupIds.includes(g.id));
     }, [enabledSearchGroupIds]);
-
 
     const showCenteredForm = messages.length === 0 && !hasSubmitted;
     const showChatInterface = isKeyLoaded && apiKey;
