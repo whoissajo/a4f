@@ -1,20 +1,12 @@
-
-
 "use client";
 import 'katex/dist/katex.min.css';
 import '@/styles/custom-scrollbar.css';
+import Spline from '@splinetool/react-spline';
 
 import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
-import Image from 'next/image';
+import Image from 'next/image'; // Keep this import
 import { useTheme } from 'next-themes';
-import dynamic from 'next/dynamic';
-
-// import Spline from '@splinetool/react-spline'; // Temporarily commented out
-// const Spline = dynamic(() => import('@splinetool/react-spline/Spline'), { // Also tried @splinetool/react-spline and @splinetool/react-spline/next
-//   ssr: false,
-//   loading: () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>Loading 3D Scene...</p></div>,
-// });
-
+import { useHotkeys } from 'react-hotkeys-hook';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
@@ -27,10 +19,9 @@ import { ApiKeyNotification } from '@/components/ui/form-component/notifications
 import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
 import Messages from '@/components/messages';
-import { SimpleApiKeyInput } from '@/components/api-keys';
-import { SettingsDialog } from '@/components/settings-dialog';
+import { SimpleApiKeyInput } from '@/components/api-keys'; 
+import { SettingsDialog } from '@/components/settings-dialog'; 
 import { ChatHistorySidebar } from '@/components/chat-history-sidebar';
-import { SpotlightCursor } from '@/components/ui/spotlight-cursor';
 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { cn } from '@/lib/utils';
@@ -40,8 +31,6 @@ import { useScrollManagement } from '@/app/page-hooks/use-scroll-management';
 import { PageNavbar } from '@/app/page-components/page-navbar';
 import { DateTimeWidgets } from '@/app/page-components/date-time-widgets';
 
-// Temporarily define a placeholder if Spline cannot be imported, to avoid breaking JSX
-const SplinePlaceholder = () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>3D Scene Placeholder (Spline import issue)</p></div>;
 
 
 const HomeContent = () => {
@@ -66,29 +55,29 @@ const HomeContent = () => {
         isTavilyKeyAvailable, handleGroupSelection,
         fileInputRef, inputRef, systemPromptInputRef,
         chatHistory, loadChatFromHistory, deleteChatFromHistory, clearAllChatHistory,
-        handleFullReset,
+        handleFullReset, 
         isChatHistoryFeatureEnabled, setIsChatHistoryFeatureEnabled,
-        enabledSearchGroupIds,
+        enabledSearchGroupIds, 
         toggleSearchGroup,
         isTextToSpeechFeatureEnabled, setIsTextToSpeechFeatureEnabled,
-        isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled,
-        isAttachmentButtonEnabled, setIsAttachmentButtonEnabled,
-        isSpeechToTextEnabled, setIsSpeechToTextEnabled, // Corrected: from useChatLogic
-        ttsProvider, setTtsProvider,
+        isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled, 
+        isAttachmentButtonEnabled, setIsAttachmentButtonEnabled, 
+        isSpeechToTextEnabled, setIsSpeechToTextEnabled,
+        ttsProvider, setTtsProvider, 
         browserTtsSpeed, setBrowserTtsSpeed,
-        availableBrowserVoices,
-        selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI,
-        isListening,
+        availableBrowserVoices, 
+        selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI, 
+        isListening, 
         handleToggleListening,
-        editingMessageId,
-        handleStartEdit,
-        handleCancelEdit,
+        editingMessageId, // New
+        handleStartEdit,   // New
+        handleCancelEdit,  // New
     } = useChatLogic();
 
     const [isStreamingState, setIsStreamingState] = useState(false);
     const [isGroupSelectorExpanded, setIsGroupSelectorExpanded] = useState(false);
     const [isHistorySidebarOpen, setIsHistorySidebarOpen] = useState(false);
-    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false); 
 
     useEffect(() => {
       const streamingMessage = messages.find(msg => msg.isStreaming);
@@ -119,16 +108,54 @@ const HomeContent = () => {
         return allSearchGroupsConfig.filter(g => g.show && enabledSearchGroupIds.includes(g.id));
     }, [enabledSearchGroupIds]);
 
+
     const showCenteredForm = messages.length === 0 && !hasSubmitted;
     const showChatInterface = isKeyLoaded && apiKey;
 
+    // Keyboard Shortcuts (Windows/Linux: Ctrl, Mac: Cmd)
+    useHotkeys('ctrl+k, meta+k', (e) => {
+        e.preventDefault();
+        setIsSettingsDialogOpen(true);
+    }, [setIsSettingsDialogOpen]);
+    useHotkeys('ctrl+n, meta+n', (e) => {
+        e.preventDefault();
+        resetChatState();
+    }, [resetChatState]);
+    useHotkeys('ctrl+i, meta+i', (e) => {
+        e.preventDefault();
+        // Select image group if available
+        const imageGroup = allSearchGroupsConfig.find(g => g.id === 'image');
+        if (imageGroup && enabledSearchGroupIds.includes('image')) {
+            handleGroupSelection(imageGroup);
+        } else {
+            toast.info('Image group is not enabled.');
+        }
+    }, [handleGroupSelection, enabledSearchGroupIds]);
+    useHotkeys('ctrl+c, meta+c', (e) => {
+        e.preventDefault();
+        // Select chat group if available
+        const chatGroup = allSearchGroupsConfig.find(g => g.id === 'chat');
+        if (chatGroup && enabledSearchGroupIds.includes('chat')) {
+            handleGroupSelection(chatGroup);
+        } else {
+            toast.info('Chat group is not enabled.');
+        }
+    }, [handleGroupSelection, enabledSearchGroupIds]);
+    useHotkeys('ctrl+m, meta+m', (e) => {
+        e.preventDefault();
+        setIsGroupSelectorExpanded((prev) => !prev);
+    }, []);
+    useHotkeys('ctrl+p, meta+p', (e) => {
+        e.preventDefault();
+        handleToggleListening();
+    }, [handleToggleListening]);
+
     return (
         <div className="flex flex-col font-sans items-center min-h-screen bg-background text-foreground transition-colors duration-500">
-            <SpotlightCursor />
             <PageNavbar
                 hasMessages={messages.length > 0 || hasSubmitted}
                 onNewChat={resetChatState}
-                onOpenSettingsDialog={() => setIsSettingsDialogOpen(true)}
+                onOpenSettingsDialog={() => setIsSettingsDialogOpen(true)} 
                 onToggleHistorySidebar={() => setIsHistorySidebarOpen(prev => !prev)}
                 isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
             />
@@ -143,32 +170,34 @@ const HomeContent = () => {
                     setIsHistorySidebarOpen(false);
                   }}
                   onDeleteChat={deleteChatFromHistory}
-                  onClearAllHistory={() => {
+                  onClearAllHistory={() => { 
                     clearAllChatHistory();
-                    setIsHistorySidebarOpen(false);
+                    setIsHistorySidebarOpen(false); 
                   }}
                 />
             )}
 
             <SimpleApiKeyInput
                 apiKey={apiKey}
-                setApiKey={setApiKey}
+                setApiKey={setApiKey} 
                 isKeyLoaded={isKeyLoaded}
                 isOpen={showSimpleApiKeyInput}
                 onOpenChange={setShowSimpleApiKeyInput}
             />
-
+            
             <SettingsDialog
                 isOpen={isSettingsDialogOpen}
                 onOpenChange={setIsSettingsDialogOpen}
+                // Account props
                 accountInfo={accountInfo}
                 isAccountLoading={isAccountLoading}
                 onRefreshAccount={fetchAccountInfo}
-                onLogoutAndReset={handleFullReset}
+                onLogoutAndReset={handleFullReset} 
+                // API Keys props
                 apiKeys={apiKeys}
                 setApiKey={setApiKeyByType}
                 isKeysLoaded={isKeysLoaded}
-                onSwitchToWebSearch={() => {
+                onSwitchToWebSearch={() => { 
                     const webGroup = allSearchGroupsConfig.find(g => g.id === 'web');
                     if (webGroup && enabledSearchGroupIds.includes('web')) {
                         handleGroupSelection(webGroup);
@@ -176,6 +205,7 @@ const HomeContent = () => {
                         toast.info("Web search group is disabled in customization settings.");
                     }
                 }}
+                // Customization props
                 isChatHistoryFeatureEnabled={isChatHistoryFeatureEnabled}
                 onToggleChatHistoryFeature={setIsChatHistoryFeatureEnabled}
                 isTextToSpeechFeatureEnabled={isTextToSpeechFeatureEnabled}
@@ -209,7 +239,7 @@ const HomeContent = () => {
                     "w-full max-w-[26rem] sm:max-w-2xl space-y-6 px-2 sm:px-0 mx-auto transition-all duration-300 flex-grow flex flex-col",
                     showCenteredForm && showChatInterface ? "justify-center -mt-16" : "justify-start"
                 )}>
-                    {!apiKey && isKeyLoaded && !showSimpleApiKeyInput && (
+                    {!apiKey && isKeyLoaded && !showSimpleApiKeyInput && ( 
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -230,15 +260,8 @@ const HomeContent = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
-                            className="flex flex-col items-center text-center"
+                            className="text-center"
                         >
-                             <div
-                                title="Spline 3D Interactive Background"
-                                className="w-full h-[250px] sm:h-[300px] md:h-[350px] mb-6 rounded-lg overflow-hidden shadow-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50"
-                              >
-                                {/* <Spline scene="https://prod.spline.design/7-FObu0Kc9MZBedS/scene.splinecode" /> */}
-                                <SplinePlaceholder /> {/* Using placeholder due to import issues */}
-                              </div>
                             <h1 className="text-2xl sm:text-4xl mb-4 sm:mb-6 text-neutral-800 dark:text-neutral-100 font-syne">
                                 What do you want to explore?
                             </h1>
@@ -391,5 +414,4 @@ const Home = () => {
 };
 
 export default Home;
-
 

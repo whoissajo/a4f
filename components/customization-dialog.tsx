@@ -1,3 +1,4 @@
+"use client";
 // components/customization-dialog.tsx
 import React, { useState } from 'react';
 import {
@@ -19,6 +20,7 @@ import { Slider } from '@/components/ui/slider';
 import { SearchGroupId, searchGroups as allSearchGroupsConfig } from '@/lib/utils';
 import { Settings, History, MessageSquareText, Mic, Globe, Book, YoutubeIcon, Code, Bot as BuddyIcon, Image as ImageIcon, FileText, Paperclip, KeyRound, RadioTower, Volume2, Brain, Gauge } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CustomizationDialogProps {
   isOpen: boolean;
@@ -79,6 +81,7 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
 }) => {
   const availableGroupsToCustomize = allSearchGroupsConfig.filter(g => g.show);
   const [tempElevenLabsKey, setTempElevenLabsKey] = useState(elevenLabsApiKey || '');
+  const isMobile = useIsMobile();
 
   const handleSaveElevenLabsKey = () => {
     onSetElevenLabsApiKey(tempElevenLabsKey.trim() || null);
@@ -106,6 +109,32 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
 
         <ScrollArea className="max-h-[60vh] pr-3 -mr-3 dialog-custom-scrollbar">
           <div className="space-y-6 py-4">
+            {/* Force show Enabled Search Groups section at the very top */}
+            <div className="space-y-3 border-2 border-blue-500 bg-blue-50 dark:bg-blue-900 rounded-lg p-3">
+              <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                <MessageSquareText className="h-4 w-4 text-blue-700 dark:text-blue-200"/>
+                Enabled Search Groups
+              </h4>
+              <p className="text-xs text-blue-800 dark:text-blue-200 -mt-2">Select which search modes are available in the input area. If you do not see group options below, please reload the app.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {allSearchGroupsConfig.filter(g => g.show).map((group) => {
+                  const Icon = getGroupIcon(group.id);
+                  return (
+                    <div key={group.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                      <Label htmlFor={`group-toggle-${group.id}`} className="flex items-center gap-2 text-sm text-card-foreground cursor-pointer">
+                        <Icon className="h-4 w-4 text-muted-foreground"/>
+                        {group.name}
+                      </Label>
+                      <Switch
+                        id={`group-toggle-${group.id}`}
+                        checked={enabledSearchGroupIds.includes(group.id)}
+                        onCheckedChange={() => onToggleSearchGroup(group.id)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             {/* Feature Toggles Section */}
             <div className="space-y-3">
                 <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -173,9 +202,11 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
                                     value={[browserTtsSpeed]}
                                     onValueChange={(value) => onSetBrowserTtsSpeed(value[0])}
                                 />
-                                <p className="text-[10px] text-muted-foreground">
+                                {!isMobile && (
+                                  <p className="text-[10px] text-muted-foreground">
                                     Adjust the playback speed for browser-based text-to-speech. Voice selection uses browser/OS defaults.
-                                </p>
+                                  </p>
+                                )}
                             </div>
                         )}
 
@@ -207,32 +238,7 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
             
             <Separator />
 
-            {/* Search Groups Toggles */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                <MessageSquareText className="h-4 w-4 text-muted-foreground"/>
-                Enabled Search Groups
-              </h4>
-              <p className="text-xs text-muted-foreground -mt-2">Select which search modes are available in the input area.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {availableGroupsToCustomize.map((group) => {
-                  const Icon = getGroupIcon(group.id);
-                  return (
-                    <div key={group.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
-                      <Label htmlFor={`group-toggle-${group.id}`} className="flex items-center gap-2 text-sm text-card-foreground cursor-pointer">
-                        <Icon className="h-4 w-4 text-muted-foreground"/>
-                        {group.name}
-                      </Label>
-                      <Switch
-                        id={`group-toggle-${group.id}`}
-                        checked={enabledSearchGroupIds.includes(group.id)}
-                        onCheckedChange={() => onToggleSearchGroup(group.id)}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            {/* ...existing code... */}
           </div>
         </ScrollArea>
 
@@ -245,4 +251,3 @@ export const CustomizationDialog: React.FC<CustomizationDialogProps> = ({
     </Dialog>
   );
 };
-

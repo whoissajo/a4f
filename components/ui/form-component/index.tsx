@@ -10,6 +10,7 @@ import SystemPromptIcon from '../system-prompt-icon';
 import { cn, SearchGroupId, SimpleMessage, Attachment, ModelUIData, SearchGroup } from '@/lib/utils'; 
 
 import { MAX_IMAGES, MAX_INPUT_CHARS } from './constants';
+import { Capacitor } from '@capacitor/core';
 import { ArrowUpIcon, PaperclipIcon } from './icons';
 import { UploadingAttachment } from './types';
 import { hasVisionSupport } from './model-select/utils'; 
@@ -387,7 +388,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                         </Button>
                                     )}
                                     {!isImageMode && isAttachmentButtonEnabled && AttachButtonElement}
-                                    {!isImageMode && isSpeechToTextEnabled && SpeechButtonElement}
+                                    {!isImageMode && isSpeechToTextEnabled && !(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") && SpeechButtonElement}
                                     {isProcessing && !isListening ? ( // Show stop only if processing and not listening
                                         <Button
                                             type="button"
@@ -419,4 +420,3 @@ const FormComponent: React.FC<FormComponentProps> = ({
 };
 
 export default FormComponent;
-

@@ -94,7 +94,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
 
   const CodeBlock: React.FC<CodeBlockProps> = ({ language, children }) => {
     const [isCopied, setIsCopied] = useState(false);
-    const [isWrapped, setIsWrapped] = useState(true);
     const { theme } = useTheme();
 
     const handleCopy = useCallback(async () => {
@@ -103,104 +102,147 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
       setTimeout(() => setIsCopied(false), 2000);
       toast.success("Copied to clipboard");
     }, [children]);
-
-    const toggleWrap = useCallback(() => {
-      setIsWrapped(prev => !prev);
-    }, []);
+    
+    const terminalTheme = {
+        'code[class*="language-"]': {
+            color: '#9aefe1',
+            fontFamily: GeistMono.style.fontFamily,
+            fontSize: '0.9em',
+            textAlign: 'left',
+            whiteSpace: 'pre-wrap',
+            wordSpacing: 'normal',
+            wordBreak: 'break-all',
+            lineHeight: '1.6',
+            mozTabSize: '4',
+            oTabSize: '4',
+            tabSize: '4',
+            webkitHyphens: 'none',
+            mozHyphens: 'none',
+            msHyphens: 'none',
+            hyphens: 'none'
+        },
+        'pre[class*="language-"]': {
+            color: '#9aefe1',
+            fontFamily: GeistMono.style.fontFamily,
+            fontSize: '0.9em',
+            textAlign: 'left',
+            whiteSpace: 'pre-wrap',
+            wordSpacing: 'normal',
+            wordBreak: 'break-all',
+            lineHeight: '1.6',
+            mozTabSize: '4',
+            oTabSize: '4',
+            tabSize: '4',
+            webkitHyphens: 'none',
+            mozHyphens: 'none',
+            msHyphens: 'none',
+            hyphens: 'none',
+            padding: '1.25em 1em',
+            margin: '0',
+            overflow: 'auto',
+            background: 'transparent'
+        },
+        ':not(pre) > code[class*="language-"]': {
+            background: '#2d3748',
+            padding: '0.1em',
+            borderRadius: '0.3em'
+        },
+        comment: { color: '#6c757d' },
+        prolog: { color: '#6c757d' },
+        doctype: { color: '#6c757d' },
+        cdata: { color: '#6c757d' },
+        punctuation: { color: '#6c757d' },
+        namespace: { opacity: 0.7 },
+        property: { color: '#c98aed' },
+        tag: { color: '#e06c75' },
+        constant: { color: '#e06c75' },
+        symbol: { color: '#e06c75' },
+        deleted: { color: '#e06c75' },
+        boolean: { color: '#c98aed' },
+        number: { color: '#d19a66' },
+        selector: { color: '#61afef' },
+        'attr-name': { color: '#c98aed' },
+        string: { color: '#98c379' },
+        char: { color: '#98c379' },
+        builtin: { color: '#61afef' },
+        inserted: { color: '#98c379' },
+        operator: { color: '#56b6c2' },
+        entity: { color: '#56b6c2', cursor: 'help' },
+        url: { color: '#56b6c2' },
+        '.language-css .token.string': { color: '#56b6c2' },
+        '.style .token.string': { color: '#56b6c2' },
+        variable: { color: '#c98aed' },
+        atrule: { color: '#61afef' },
+        'attr-value': { color: '#98c379' },
+        function: { color: '#61afef' },
+        'class-name': { color: '#e5c07b' },
+        keyword: { color: '#c98aed' },
+        regex: { color: '#e06c75' },
+        important: { color: '#e06c75', fontWeight: 'bold' },
+        bold: { fontWeight: 'bold' },
+        italic: { fontStyle: 'italic' }
+    };
 
     return (
-      <div className="group my-5 relative">
-        <div className="rounded-md overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-xs">
-          <div className="flex items-center justify-between px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
-            <div className="px-2 py-0.5 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-              {language || 'text'}
+      <div className="my-5 relative group/codeblock">
+        <div
+          className="overflow-hidden rounded-lg border bg-[#2D3748] border-neutral-700/50 shadow-lg"
+          style={{ fontFamily: GeistMono.style.fontFamily }}
+        >
+          {/* Custom Header */}
+          <div
+            className="flex items-center justify-between h-10 px-4 bg-[#212936]/50 border-b border-neutral-700/50"
+          >
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-red-500"></span>
+              <span className="h-3 w-3 rounded-full bg-yellow-500"></span>
+              <span className="h-3 w-3 rounded-full bg-green-500"></span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={toggleWrap}
-                className={cn(`
-                  px-2 py-1
-                  rounded text-xs font-medium
-                  transition-all duration-200
-                  flex items-center gap-1.5
-                `, isWrapped ? 'text-primary' : 'text-neutral-500 dark:text-neutral-400',
-                   'hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                )}
-                aria-label="Toggle line wrapping"
-              >
-                {isWrapped ? (
-                  <>
-                    <ArrowLeftRight className="h-3 w-3" />
-                    <span className="hidden sm:inline">Unwrap</span>
-                  </>
-                ) : (
-                  <>
-                    <WrapText className="h-3 w-3" />
-                    <span className="hidden sm:inline">Wrap</span>
-                  </>
-                )}
-              </button>
-              <button
+            <span className="text-xs text-neutral-400 font-medium">
+                {language || 'text'}
+            </span>
+            <button
                 onClick={handleCopy}
-                className={cn(`
-                  px-2 py-1
-                  rounded text-xs font-medium
-                  transition-all duration-200
-                  flex items-center gap-1.5
-                `, isCopied ? 'text-primary dark:text-primary' : 'text-neutral-500 dark:text-neutral-400',
-                   'hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                className={cn(
+                  `px-2 py-1 rounded text-xs font-medium transition-all duration-200 flex items-center gap-1.5`,
+                  `text-neutral-400 bg-transparent hover:bg-neutral-700/50`,
+                  `opacity-0 group-hover/codeblock:opacity-100`
                 )}
                 aria-label="Copy code"
-              >
-                {isCopied ? (
-                  <>
-                    <Check className="h-3 w-3" />
-                    <span className="hidden sm:inline">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" />
-                    <span className="hidden sm:inline">Copy</span>
-                  </>
-                )}
-              </button>
-            </div>
+            >
+              {isCopied ? (
+                <>
+                  <Check className="h-3 w-3" />
+                  <span className="hidden sm:inline">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3 w-3" />
+                  <span className="hidden sm:inline">Copy</span>
+                </>
+              )}
+            </button>
           </div>
+          
           <SyntaxHighlighter
             language={language || 'text'}
-            style={theme === 'dark' ? oneDark : oneLight}
+            style={terminalTheme as any}
             customStyle={{
               margin: 0,
-              padding: '0.75rem 0.25rem 0.75rem',
-              backgroundColor: theme === 'dark' ? '#171717' : 'transparent',
-              borderRadius: 0,
-              borderBottomLeftRadius: '0.375rem',
-              borderBottomRightRadius: '0.375rem',
-              fontFamily: GeistMono.style.fontFamily,
+              padding: '1.25em 1em',
+              background: 'transparent',
+              fontSize: '0.92em',
+              minHeight: '2.5em',
             }}
-            showLineNumbers={true}
-            lineNumberStyle={{
-              textAlign: 'right',
-              color: theme === 'dark' ? '#6b7280' : '#808080',
-              backgroundColor: 'transparent',
-              fontStyle: 'normal',
-              marginRight: '1em',
-              paddingRight: '0.5em',
-              fontFamily: GeistMono.style.fontFamily,
-              minWidth: '2em'
-            }}
-            lineNumberContainerStyle={{
-              backgroundColor: theme === 'dark' ? '#171717' : '#f5f5f5',
-              float: 'left'
-            }}
-            wrapLongLines={isWrapped}
+            showLineNumbers={false}
+            wrapLongLines={true}
             codeTagProps={{
               style: {
                 fontFamily: GeistMono.style.fontFamily,
-                fontSize: '0.85em',
-                whiteSpace: isWrapped ? 'pre-wrap' : 'pre',
-                overflowWrap: isWrapped ? 'break-word' : 'normal',
-                wordBreak: isWrapped ? 'break-word' : 'keep-all'
+                fontSize: '0.92em',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
               }
             }}
           >
