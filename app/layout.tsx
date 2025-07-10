@@ -6,7 +6,6 @@ import { Syne } from 'next/font/google';
 import { Toaster } from "sonner"; // Keep for notifications
 import "./globals.css";
 import { Providers } from './providers';
-import Spline from '@splinetool/react-spline/next';
 import { Component as SpotlightCursor } from '@/components/spotlight-cursor';
 
 export const metadata: Metadata = {
@@ -65,12 +64,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${GeistSans.variable} ${syne.variable} font-sans antialiased`} suppressHydrationWarning>
-        {/* <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1 }}>
-          <Spline
-            // scene="https://prod.spline.design/7-FObu0Kc9MZBedS/scene.splinecode"
-            // scene="https://prod.spline.design/iMfrZ0CGERWCUgH7/scene.splinecode"
-          />
-        </div> */}
         {/* Only show spotlight in dark mode */}
         <SpotlightCursor className="hidden dark:block" />
         <Providers>
