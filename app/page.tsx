@@ -145,16 +145,6 @@ const HomeContent = () => {
             toast.info('Image group is not enabled.');
         }
     }, [handleGroupSelection, enabledSearchGroupIds]);
-    useHotkeys('ctrl+c, meta+c', (e) => {
-        e.preventDefault();
-        // Select chat group if available
-        const chatGroup = allSearchGroupsConfig.find(g => g.id === 'chat');
-        if (chatGroup && enabledSearchGroupIds.includes('chat')) {
-            handleGroupSelection(chatGroup);
-        } else {
-            toast.info('Chat group is not enabled.');
-        }
-    }, [handleGroupSelection, enabledSearchGroupIds]);
     useHotkeys('ctrl+m, meta+m', (e) => {
         e.preventDefault();
         setIsGroupSelectorExpanded((prev) => !prev);
