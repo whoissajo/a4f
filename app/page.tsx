@@ -21,8 +21,6 @@ import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
 import Messages from '@/components/messages';
 import { SimpleApiKeyInput } from '@/components/api-keys'; 
-// import { SettingsDialog } from '@/components/settings-dialog'; 
-// import { ChatHistorySidebar } from '@/components/chat-history-sidebar';
 
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { cn } from '@/lib/utils';
@@ -31,6 +29,7 @@ import { useChatLogic } from '@/app/page-hooks/use-chat-logic';
 import { useScrollManagement } from '@/app/page-hooks/use-scroll-management';
 import { PageNavbar } from '@/app/page-components/page-navbar';
 import { DateTimeWidgets } from '@/app/page-components/date-time-widgets';
+import { Component as SpotlightCursor } from '@/components/spotlight-cursor';
 
 // Dynamically import heavy components
 const SettingsDialog = dynamic(() =>
@@ -159,6 +158,7 @@ const HomeContent = () => {
             {/* <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1 }}>
               <p>Error: Spline import is currently commented out in app/page.tsx to resolve a build issue.</p>
             </div> */}
+            <SpotlightCursor />
 
             <PageNavbar
                 hasMessages={messages.length > 0 || hasSubmitted}
@@ -244,7 +244,7 @@ const HomeContent = () => {
                 showCenteredForm && showChatInterface ? "justify-center" : "pb-40"
             )}>
                 <div className={cn(
-                    "w-full max-w-[26rem] sm:max-w-2xl space-y-6 px-2 sm:px-0 mx-auto transition-all duration-300 flex-grow flex flex-col",
+                    "w-full max-w-full sm:max-w-2xl lg:max-w-4xl space-y-6 px-2 sm:px-0 mx-auto transition-all duration-300 flex-grow flex flex-col",
                     showCenteredForm && showChatInterface ? "justify-center -mt-16" : "justify-start"
                 )}>
                     {!apiKey && isKeyLoaded && !showSimpleApiKeyInput && ( 
@@ -343,7 +343,7 @@ const HomeContent = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 20 }}
                         transition={{ duration: 0.3 }}
-                        className="fixed bottom-4 left-0 right-0 w-full max-w-[26rem] sm:max-w-2xl mx-auto z-20 px-2 sm:px-0"
+                        className="fixed bottom-4 left-0 right-0 w-full max-w-[26rem] sm:max-w-2xl lg:max-w-4xl mx-auto z-20 px-2 sm:px-0"
                     >
                         {showScrollButton && (
                             <div className="absolute -top-14 left-0 right-0 flex justify-center">
