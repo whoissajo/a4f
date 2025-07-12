@@ -163,6 +163,7 @@ const getGroupIcon = (groupId: SearchGroupId): React.ElementType => {
 };
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = (props) => {
+  const { isOpen, onRefreshAccount, elevenLabsApiKey } = props;
   const [activeTab, setActiveTab] = useState('account');
   
   // For API Keys tab
@@ -173,14 +174,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = (props) => {
   const [tempElevenLabsKey, setTempElevenLabsKey] = useState(props.elevenLabsApiKey || '');
 
   useEffect(() => {
-    if (props.isOpen) {
-      props.onRefreshAccount(); 
-      setTempElevenLabsKey(props.elevenLabsApiKey || ''); 
+    if (isOpen) {
+      onRefreshAccount(); 
+      setTempElevenLabsKey(elevenLabsApiKey || ''); 
     } else {
       setA4fTempKey('');
       setTavilyTempKey('');
     }
-  }, [props.isOpen, props.onRefreshAccount, props.elevenLabsApiKey]);
+  }, [isOpen, onRefreshAccount, elevenLabsApiKey]);
 
 
   // --- Account Tab Content ---

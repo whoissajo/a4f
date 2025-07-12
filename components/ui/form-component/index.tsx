@@ -8,6 +8,7 @@ import { X, StopCircle, Upload, Bot as DefaultBotIcon, Mic, AlertTriangle } from
 import SystemPromptInput from '../../system-prompt-input';
 import SystemPromptIcon from '../system-prompt-icon';
 import { cn, SearchGroupId, SimpleMessage, Attachment, ModelUIData, SearchGroup } from '@/lib/utils'; 
+import Image from 'next/image';
 
 import { MAX_IMAGES, MAX_INPUT_CHARS } from './constants';
 import { Capacitor } from '@capacitor/core';
@@ -201,7 +202,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
     const handleModelSelect = useCallback((model: ModelUIData) => {
         const IconElement = model.logoUrl
-            ? <img src={model.logoUrl} alt={model.label} className={cn("size-4 rounded-sm object-contain", model.logoUrl.endsWith('.svg') && "themeable-svg-logo")} />
+            ? <Image src={model.logoUrl} alt={model.label} width={16} height={16} className={cn("rounded-sm object-contain", model.logoUrl.endsWith('.svg') && "themeable-svg-logo")} />
             : (model.icon ? <model.icon className="size-4" /> : <DefaultBotIcon className="size-4" />);
 
         const notificationTitle = model.label;
