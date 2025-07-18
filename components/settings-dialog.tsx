@@ -28,7 +28,7 @@ import { SearchGroupId, searchGroups as allSearchGroupsConfig, cn, formatCurrenc
 import { 
     User, KeyRound, Palette, Settings, Brain, Mic, MessageSquareText, 
     Copy, Check, BarChart2, ExternalLink, Settings2 as SettingsIconLucide, Layers, Briefcase, Info, AlertTriangle, Package, Tag, ShieldCheck, Percent, ListChecks, Coffee, XIcon,
-    Volume2, RadioTower, LogOut, Save, UploadCloud
+    Volume2, RadioTower, LogOut, Save, UploadCloud, Gem
 } from 'lucide-react';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -102,6 +102,8 @@ interface SettingsDialogProps {
   onToggleAttachmentButton: (enabled: boolean) => void;
   isSpeechToTextEnabled: boolean; // Added this prop
   onToggleSpeechToTextEnabled: (enabled: boolean) => void; // Added this prop
+  isProModelsEnabled: boolean;
+  onToggleProModelsEnabled: (enabled: boolean) => void;
   enabledSearchGroupIds: SearchGroupId[];
   onToggleSearchGroup: (groupId: SearchGroupId) => void;
   elevenLabsApiKey: string | null;
@@ -421,6 +423,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = (props) => {
                   <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="ch-toggle" className="text-sm cursor-pointer">Enable Chat History</Label><Switch id="ch-toggle" checked={props.isChatHistoryFeatureEnabled} onCheckedChange={props.onToggleChatHistoryFeature} /></div>
                   <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="sp-toggle" className="text-sm cursor-pointer">Show System Prompt Button</Label><Switch id="sp-toggle" checked={props.isSystemPromptButtonEnabled} onCheckedChange={props.onToggleSystemPromptButton} /></div>
                   <div className="flex items-center justify-between p-3 rounded-lg border bg-card"><Label htmlFor="at-toggle" className="text-sm cursor-pointer">Show Attachment Button</Label><Switch id="at-toggle" checked={props.isAttachmentButtonEnabled} onCheckedChange={props.onToggleAttachmentButton} /></div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <Label htmlFor="pro-models-toggle" className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Gem className="h-4 w-4 text-indigo-500"/>
+                        Enable Pro Models
+                    </Label>
+                    <Switch id="pro-models-toggle" checked={props.isProModelsEnabled} onCheckedChange={props.onToggleProModelsEnabled} />
+                  </div>
                   {!(Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android") && (
                     <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
                       <Label htmlFor="stt-toggle" className="text-sm cursor-pointer">Enable Speech-to-Text Button</Label>

@@ -76,6 +76,7 @@ const HomeContent = () => {
         isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled, 
         isAttachmentButtonEnabled, setIsAttachmentButtonEnabled, 
         isSpeechToTextEnabled, setIsSpeechToTextEnabled,
+        isProModelsEnabled, setIsProModelsEnabled,
         ttsProvider, setTtsProvider, 
         browserTtsSpeed, setBrowserTtsSpeed,
         availableBrowserVoices, 
@@ -120,6 +121,13 @@ const HomeContent = () => {
     const effectiveSearchGroups = useMemo(() => {
         return allSearchGroupsConfig.filter(g => g.show && enabledSearchGroupIds.includes(g.id));
     }, [enabledSearchGroupIds]);
+
+    const modelsToDisplay = useMemo(() => {
+      if (isProModelsEnabled) {
+        return availableModels;
+      }
+      return availableModels.filter(model => model.modelType !== 'pro');
+    }, [availableModels, isProModelsEnabled]);
 
 
     const showCenteredForm = messages.length === 0 && !hasSubmitted;
@@ -224,6 +232,8 @@ const HomeContent = () => {
                 onToggleAttachmentButton={setIsAttachmentButtonEnabled}
                 isSpeechToTextEnabled={isSpeechToTextEnabled}
                 onToggleSpeechToTextEnabled={setIsSpeechToTextEnabled}
+                isProModelsEnabled={isProModelsEnabled}
+                onToggleProModelsEnabled={setIsProModelsEnabled}
                 enabledSearchGroupIds={enabledSearchGroupIds}
                 onToggleSearchGroup={toggleSearchGroup}
                 elevenLabsApiKey={apiKeys.elevenlabs.key}
@@ -281,7 +291,7 @@ const HomeContent = () => {
                                 status={status}
                                 selectedModel={selectedModel}
                                 setSelectedModel={setSelectedModel}
-                                models={availableModels}
+                                models={modelsToDisplay}
                                 attachments={attachments}
                                 setAttachments={setAttachments}
                                 fileInputRef={fileInputRef}
@@ -374,7 +384,7 @@ const HomeContent = () => {
                             status={status}
                             selectedModel={selectedModel}
                             setSelectedModel={setSelectedModel}
-                            models={availableModels}
+                            models={modelsToDisplay}
                             attachments={attachments}
                             setAttachments={setAttachments}
                             fileInputRef={fileInputRef}

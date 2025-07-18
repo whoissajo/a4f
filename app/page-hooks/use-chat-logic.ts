@@ -61,6 +61,7 @@ export function useChatLogic() {
   const [isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled] = useLocalStorage<boolean>('a4f-system-prompt-button-enabled', true);
   const [isAttachmentButtonEnabled, setIsAttachmentButtonEnabled] = useLocalStorage<boolean>('a4f-attachment-button-enabled', true);
   const [isSpeechToTextEnabled, setIsSpeechToTextEnabled] = useLocalStorage<boolean>('a4f-speech-to-text-enabled', true);
+  const [isProModelsEnabled, setIsProModelsEnabled] = useLocalStorage<boolean>('a4f-pro-models-enabled', true);
   const [ttsProvider, setTtsProvider] = useLocalStorage<'browser' | 'elevenlabs'>('a4f-tts-provider', 'browser');
   const [browserTtsSpeed, setBrowserTtsSpeed] = useLocalStorage<number>('a4f-browser-tts-speed', 1.0);
   const [selectedBrowserTtsVoiceURI, setSelectedBrowserTtsVoiceURI] = useLocalStorage<string | undefined>('a4f-browser-tts-voice-uri', undefined);
@@ -320,6 +321,7 @@ export function useChatLogic() {
     setIsSystemPromptButtonEnabled(true);
     setIsAttachmentButtonEnabled(true);
     setIsSpeechToTextEnabled(true);
+    setIsProModelsEnabled(true);
     setTtsProvider('browser');
     setBrowserTtsSpeed(1.0);
     setSelectedBrowserTtsVoiceURI(undefined);
@@ -337,6 +339,7 @@ export function useChatLogic() {
     setIsSystemPromptButtonEnabled, 
     setIsAttachmentButtonEnabled, 
     setIsSpeechToTextEnabled,
+    setIsProModelsEnabled,
     setTtsProvider, 
     setBrowserTtsSpeed,
     setSelectedBrowserTtsVoiceURI,
@@ -615,6 +618,7 @@ export function useChatLogic() {
     isSystemPromptButtonEnabled, setIsSystemPromptButtonEnabled,
     isAttachmentButtonEnabled, setIsAttachmentButtonEnabled,
     isSpeechToTextEnabled, setIsSpeechToTextEnabled, 
+    isProModelsEnabled, setIsProModelsEnabled,
     ttsProvider, setTtsProvider,
     browserTtsSpeed, setBrowserTtsSpeed,
     availableBrowserVoices, 
