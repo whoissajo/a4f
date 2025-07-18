@@ -30,6 +30,7 @@ interface ModelSelectDropdownContentProps {
   setSearchQuery: (query: string) => void;
   isSearchUIVisible: boolean;
   setIsSearchUIVisible: (visible: boolean) => void;
+  isProModelsEnabled: boolean;
   // messages prop removed
 }
 
@@ -53,6 +54,7 @@ export const ModelSelectDropdownContentInternal: React.FC<ModelSelectDropdownCon
   setSearchQuery,
   isSearchUIVisible,
   setIsSearchUIVisible,
+  isProModelsEnabled,
   // messages prop removed from destructuring
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -150,13 +152,15 @@ export const ModelSelectDropdownContentInternal: React.FC<ModelSelectDropdownCon
       </div>
 
       <Tabs defaultValue="free" value={currentPlan} onValueChange={(value: string) => onPlanChange(value as 'free' | 'pro')} className="w-full flex flex-col flex-grow min-h-0">
-        <TabsList className="grid w-full grid-cols-2 h-10 rounded-none bg-neutral-100 dark:bg-neutral-800/50 p-1 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+        <TabsList className={cn("w-full h-10 rounded-none bg-neutral-100 dark:bg-neutral-800/50 p-1 border-b border-neutral-200 dark:border-neutral-800 flex-shrink-0", isProModelsEnabled ? "grid grid-cols-2" : "grid grid-cols-1")}>
           <TabsTrigger value="free" className="text-xs h-full data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900 data-[state=active]:shadow-sm data-[state=active]:border border-transparent data-[state=active]:border-green-500 dark:data-[state=active]:border-green-600">
             <Sparkles className="mr-1.5 h-3.5 w-3.5 text-green-500" /> Free Models
           </TabsTrigger>
-          <TabsTrigger value="pro" className={cn("text-xs h-full data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900 data-[state=active]:shadow-sm data-[state=active]:border border-transparent data-[state=active]:border-indigo-500 dark:data-[state=active]:border-indigo-600")}>
-            <DollarSign className="mr-1.5 h-3.5 w-3.5 text-indigo-500" /> Pro Models
-          </TabsTrigger>
+          {isProModelsEnabled && (
+            <TabsTrigger value="pro" className={cn("text-xs h-full data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900 data-[state=active]:shadow-sm data-[state=active]:border border-transparent data-[state=active]:border-indigo-500 dark:data-[state=active]:border-indigo-600")}>
+                <DollarSign className="mr-1.5 h-3.5 w-3.5 text-indigo-500" /> Pro Models
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent p-1 space-y-0.5 max-h-[var(--form-model-list-max-height,350px)]">

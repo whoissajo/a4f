@@ -21,6 +21,7 @@ interface ModelSwitcherProps {
     currentPlan: 'free' | 'pro';
     onPlanChange: (plan: 'free' | 'pro') => void;
     isMobile: boolean;
+    isProModelsEnabled: boolean;
 }
 
 export const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
@@ -34,7 +35,8 @@ export const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
     onModelSelect,
     currentPlan,
     onPlanChange,
-    isMobile
+    isMobile,
+    isProModelsEnabled
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -211,8 +213,8 @@ export const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
                 setSearchQuery={setSearchQuery}
                 isSearchUIVisible={isSearchUIVisible}
                 setIsSearchUIVisible={setIsSearchUIVisible}
+                isProModelsEnabled={isProModelsEnabled}
             />
         </DropdownMenu>
     );
 };
-

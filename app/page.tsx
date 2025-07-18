@@ -4,7 +4,6 @@ import '@/styles/custom-scrollbar.css';
 // import Spline from '@splinetool/react-spline';
 
 import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
-import dynamic from 'next/dynamic';
 import Image from 'next/image'; // Keep this import
 import { useTheme } from 'next-themes';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -30,8 +29,9 @@ import { useScrollManagement } from '@/app/page-hooks/use-scroll-management';
 import { PageNavbar } from '@/app/page-components/page-navbar';
 import { DateTimeWidgets } from '@/app/page-components/date-time-widgets';
 import { Component as SpotlightCursor } from '@/components/spotlight-cursor';
+import dynamic from 'next/dynamic';
 
-// Dynamically import heavy components
+
 const SettingsDialog = dynamic(() =>
   import('@/components/settings-dialog').then((mod) => mod.SettingsDialog)
 );
@@ -322,6 +322,7 @@ const HomeContent = () => {
                                 handleToggleListening={handleToggleListening}
                                 editingMessageId={editingMessageId}
                                 handleCancelEdit={handleCancelEdit}
+                                isProModelsEnabled={isProModelsEnabled}
                             />
                             <DateTimeWidgets status={status} apiKey={apiKey} onDateTimeClick={handleWidgetDateTimeClick} />
                         </motion.div>
@@ -415,6 +416,7 @@ const HomeContent = () => {
                             handleToggleListening={handleToggleListening}
                             editingMessageId={editingMessageId}
                             handleCancelEdit={handleCancelEdit}
+                            isProModelsEnabled={isProModelsEnabled}
                         />
                     </motion.div>
                 )}
@@ -432,5 +434,3 @@ const Home = () => {
 };
 
 export default Home;
-
-    

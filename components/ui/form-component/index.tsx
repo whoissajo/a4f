@@ -54,6 +54,7 @@ interface FormComponentProps {
     editingMessageId: string | null; // New
     handleCancelEdit: () => void;   // New
     handleToggleListening: () => void;
+    isProModelsEnabled: boolean;
 }
 
 const FormComponent: React.FC<FormComponentProps> = ({
@@ -89,6 +90,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
     handleToggleListening,
     editingMessageId, // Destructure new prop
     handleCancelEdit,  // Destructure new prop
+    isProModelsEnabled,
 }) => {
     const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
     const isMounted = useRef(true);
@@ -362,6 +364,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                             currentPlan={currentPlan}
                                             onPlanChange={onPlanChange}
                                             isMobile={isMobile}
+                                            isProModelsEnabled={isProModelsEnabled}
                                         />
                                     </div>
                                 </div>
