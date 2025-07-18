@@ -39,13 +39,6 @@ const ChatHistorySidebar = dynamic(() =>
   import('@/components/chat-history-sidebar').then((mod) => mod.ChatHistorySidebar)
 );
 
-
-// const Spline = dynamic(() => import('@splinetool/react-spline/Spline'), {
-//   ssr: false,
-//   loading: () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>Loading 3D Scene...</p></div>,
-// });
-
-
 const HomeContent = () => {
     const {
         apiKey, setApiKey, isKeyLoaded,
@@ -163,10 +156,7 @@ const HomeContent = () => {
 
     return (
         <div className="flex flex-col font-sans items-center min-h-screen bg-background text-foreground transition-colors duration-500">
-            {/* <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1 }}>
-              <p>Error: Spline import is currently commented out in app/page.tsx to resolve a build issue.</p>
-            </div> */}
-            <SpotlightCursor />
+            <SpotlightCursor className="hidden dark:block" />
 
             <PageNavbar
                 hasMessages={messages.length > 0 || hasSubmitted}
