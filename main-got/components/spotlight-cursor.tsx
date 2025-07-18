@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useEffect, HTMLAttributes } from 'react';
+import { useTheme } from 'next-themes';
 
 interface SpotlightConfig {
   radius?: number;
@@ -90,6 +91,8 @@ export const Component = ({
   className,
   ...rest
 }: ComponentProps) => {
+  const { theme } = useTheme();
+
   const spotlightConfig = {
     radius: 200,
     brightness: 0.15,
@@ -101,6 +104,7 @@ export const Component = ({
   const canvasRef = useSpotlightEffect(spotlightConfig);
 
   return (
+    theme === 'dark' && (
     <canvas
       ref={canvasRef}
       className={`fixed top-0 left-0 pointer-events-none z-[9999] w-full h-full ${className}`}
