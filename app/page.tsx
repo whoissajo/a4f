@@ -1,7 +1,7 @@
+
 "use client";
 import 'katex/dist/katex.min.css';
 import '@/styles/custom-scrollbar.css';
-// import Spline from '@splinetool/react-spline';
 
 import React, { Suspense, useCallback, useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -38,13 +38,6 @@ const SettingsDialog = dynamic(() =>
 const ChatHistorySidebar = dynamic(() =>
   import('@/components/chat-history-sidebar').then((mod) => mod.ChatHistorySidebar)
 );
-
-
-// const Spline = dynamic(() => import('@splinetool/react-spline/Spline'), {
-//   ssr: false,
-//   loading: () => <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-lg"><p>Loading 3D Scene...</p></div>,
-// });
-
 
 const HomeContent = () => {
     const {
@@ -100,7 +93,7 @@ const HomeContent = () => {
 
     const { bottomRef, showScrollButton, scrollToBottom } = useScrollManagement(messages, isStreamingState);
     const userAvatarUrl = useUserAvatar(accountInfo);
-    const { setTheme: setNextThemeHook } = useTheme();
+    const { resolvedTheme, setTheme: setNextThemeHook } = useTheme();
 
     useEffect(() => {
       const handleThemeMessage = (event: MessageEvent) => {
@@ -163,10 +156,8 @@ const HomeContent = () => {
 
     return (
         <div className="flex flex-col font-sans items-center min-h-screen bg-background text-foreground transition-colors duration-500">
-            {/* <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1 }}>
-              <p>Error: Spline import is currently commented out in app/page.tsx to resolve a build issue.</p>
-            </div> */}
-            <SpotlightCursor className="hidden dark:block" />
+            {/* Spotlight effect for dark mode */}
+            <SpotlightCursor className={cn(resolvedTheme === 'dark' ? 'block' : 'hidden')} />
 
             <PageNavbar
                 hasMessages={messages.length > 0 || hasSubmitted}
@@ -231,7 +222,7 @@ const HomeContent = () => {
                 isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                 onToggleAttachmentButton={setIsAttachmentButtonEnabled}
                 isSpeechToTextEnabled={isSpeechToTextEnabled}
-                onToggleSpeechToTextEnabled={setIsSpeechToTextEnabled}
+                onToggleSpeechToTextFeature={setIsSpeechToTextEnabled}
                 isProModelsEnabled={isProModelsEnabled}
                 onToggleProModelsEnabled={setIsProModelsEnabled}
                 enabledSearchGroupIds={enabledSearchGroupIds}
@@ -318,10 +309,12 @@ const HomeContent = () => {
                                 isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
                                 isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                                 isSpeechToTextEnabled={isSpeechToTextEnabled}
+                                isProModelsEnabled={isProModelsEnabled}
                                 isListening={isListening}
                                 handleToggleListening={handleToggleListening}
                                 editingMessageId={editingMessageId}
                                 handleCancelEdit={handleCancelEdit}
+                                isProModelsEnabled={isProModelsEnabled}
                             />
                             <DateTimeWidgets status={status} apiKey={apiKey} onDateTimeClick={handleWidgetDateTimeClick} />
                         </motion.div>
@@ -411,10 +404,12 @@ const HomeContent = () => {
                             isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
                             isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                             isSpeechToTextEnabled={isSpeechToTextEnabled}
+                            isProModelsEnabled={isProModelsEnabled}
                             isListening={isListening}
                             handleToggleListening={handleToggleListening}
                             editingMessageId={editingMessageId}
                             handleCancelEdit={handleCancelEdit}
+                            isProModelsEnabled={isProModelsEnabled}
                         />
                     </motion.div>
                 )}
@@ -432,3 +427,5 @@ const Home = () => {
 };
 
 export default Home;
+
+    
