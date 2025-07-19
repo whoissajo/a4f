@@ -63,10 +63,10 @@ export const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
         }
         const lowerQuery = searchQuery.toLowerCase();
         return applicableModels.filter(model =>
-            model.label.toLowerCase().includes(lowerQuery) ||
-            model.baseModel.toLowerCase().includes(lowerQuery) ||
-            model.owner.toLowerCase().includes(lowerQuery) ||
-            model.apiProvider.toLowerCase().includes(lowerQuery) ||
+            (model.label && model.label.toLowerCase().includes(lowerQuery)) ||
+            (model.baseModel && model.baseModel.toLowerCase().includes(lowerQuery)) ||
+            (model.owner && model.owner.toLowerCase().includes(lowerQuery)) ||
+            (model.apiProvider && model.apiProvider.toLowerCase().includes(lowerQuery)) ||
             (model.description && model.description.toLowerCase().includes(lowerQuery))
         );
     }, [applicableModels, searchQuery]);
