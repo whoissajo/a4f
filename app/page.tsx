@@ -222,7 +222,7 @@ const HomeContent = () => {
                 isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                 onToggleAttachmentButton={setIsAttachmentButtonEnabled}
                 isSpeechToTextEnabled={isSpeechToTextEnabled}
-                onToggleSpeechToTextFeature={setIsSpeechToTextEnabled}
+                onToggleSpeechToTextEnabled={setIsSpeechToTextEnabled}
                 isProModelsEnabled={isProModelsEnabled}
                 onToggleProModelsEnabled={setIsProModelsEnabled}
                 enabledSearchGroupIds={enabledSearchGroupIds}
