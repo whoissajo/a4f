@@ -309,7 +309,6 @@ const HomeContent = () => {
                                 isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
                                 isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                                 isSpeechToTextEnabled={isSpeechToTextEnabled}
-                                isProModelsEnabled={isProModelsEnabled}
                                 isListening={isListening}
                                 handleToggleListening={handleToggleListening}
                                 editingMessageId={editingMessageId}
@@ -404,7 +403,6 @@ const HomeContent = () => {
                             isSystemPromptButtonEnabled={isSystemPromptButtonEnabled}
                             isAttachmentButtonEnabled={isAttachmentButtonEnabled}
                             isSpeechToTextEnabled={isSpeechToTextEnabled}
-                            isProModelsEnabled={isProModelsEnabled}
                             isListening={isListening}
                             handleToggleListening={handleToggleListening}
                             editingMessageId={editingMessageId}
@@ -427,5 +425,3 @@ const Home = () => {
 };
 
 export default Home;
-
-    
