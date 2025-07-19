@@ -158,7 +158,7 @@ export const ModelSelectDropdownContentInternal: React.FC<ModelSelectDropdownCon
           </TabsTrigger>
           {isProModelsEnabled && (
             <TabsTrigger value="pro" className={cn("text-xs h-full data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-900 data-[state=active]:shadow-sm data-[state=active]:border border-transparent data-[state=active]:border-indigo-500 dark:data-[state=active]:border-indigo-600")}>
-                <DollarSign className="mr-1.5 h-3.5 w-3.5 text-indigo-500" /> Pro Models
+              <DollarSign className="mr-1.5 h-3.5 w-3.5 text-indigo-500" /> Pro Models
             </TabsTrigger>
           )}
         </TabsList>

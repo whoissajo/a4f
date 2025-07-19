@@ -50,11 +50,11 @@ interface FormComponentProps {
     isSystemPromptButtonEnabled: boolean;
     isAttachmentButtonEnabled: boolean;
     isSpeechToTextEnabled: boolean;
+    isProModelsEnabled: boolean;
     isListening: boolean;
     editingMessageId: string | null; // New
     handleCancelEdit: () => void;   // New
     handleToggleListening: () => void;
-    isProModelsEnabled: boolean;
 }
 
 const FormComponent: React.FC<FormComponentProps> = ({
@@ -86,11 +86,11 @@ const FormComponent: React.FC<FormComponentProps> = ({
     isSystemPromptButtonEnabled,
     isAttachmentButtonEnabled,
     isSpeechToTextEnabled,
+    isProModelsEnabled,
     isListening,
     handleToggleListening,
     editingMessageId, // Destructure new prop
     handleCancelEdit,  // Destructure new prop
-    isProModelsEnabled,
 }) => {
     const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
     const isMounted = useRef(true);
