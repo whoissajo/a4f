@@ -82,7 +82,7 @@ export const ModelSelectDropdownContentInternal: React.FC<ModelSelectDropdownCon
 
   return (
     <DropdownMenuContent
-      className="w-[340px] p-0 font-sans rounded-lg bg-white dark:bg-neutral-900 z-[60] shadow-xl border border-neutral-200 dark:border-neutral-800 flex flex-col"
+      className="w-[300px] sm:w-[340px] p-0 font-sans rounded-lg bg-white dark:bg-neutral-900 z-[60] shadow-xl border border-neutral-200 dark:border-neutral-800 flex flex-col"
       align="start"
       side={isMobile ? "top" : "bottom"}
       sideOffset={isMobile ? 10 : 6}
