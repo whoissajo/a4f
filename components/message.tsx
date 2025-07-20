@@ -1,17 +1,23 @@
 
 // components/message.tsx
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { memo } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { MarkdownRenderer } from '@/components/markdown';
 import { TextFadeAnimation } from '@/components/text-fade-animation';
 import { User, Bot, EyeIcon, Pencil } from 'lucide-react';
 import { cn, SimpleMessage, ModelUIData } from '@/lib/utils';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
-import { InteractionButtons } from '@/components/interaction-buttons';
 import { ErrorMessage } from '@/components/error-message';
 import { ThinkingCardDisplay } from '@/components/thinking-card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from './ui/skeleton';
+
+// Dynamically import heavy components
+const MarkdownRenderer = dynamic(() => import('@/components/markdown').then(mod => mod.MarkdownRenderer), {
+    loading: () => <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /></div>,
+    ssr: false
+});
+const InteractionButtons = dynamic(() => import('@/components/interaction-buttons').then(mod => mod.InteractionButtons), { ssr: false });
 
 interface MessageProps {
     message: SimpleMessage;
@@ -26,8 +32,7 @@ interface MessageProps {
     onStartEdit: (messageId: string, currentContent: string) => void;
 }
 
-
-export const Message: React.FC<MessageProps> = ({
+export const Message: React.FC<MessageProps> = memo(({
     message,
     index,
     models = [],
@@ -68,13 +73,10 @@ export const Message: React.FC<MessageProps> = ({
     };
 
     return (
-        <motion.div
+        <div
             key={`${message.role}-${message.id}-${index}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: isUser ? 0 : 0.1 }}
             className={cn(
-                "px-0 mb-4 sm:mb-5", // Removed group/message from here
+                "px-0 mb-4 sm:mb-5", 
                 isUser ? "flex justify-end" : "flex justify-start"
             )}
         >
@@ -95,7 +97,7 @@ export const Message: React.FC<MessageProps> = ({
 
 
                 <div className={cn(
-                    "flex flex-col group/message", // Added group/message here
+                    "flex flex-col group/message", 
                     "max-w-[85%] sm:max-w-[75%] md:max-w-[70%]"
 
                 )}>
@@ -106,10 +108,7 @@ export const Message: React.FC<MessageProps> = ({
                                 <MarkdownRenderer content={message.content} />
                             </div>
                             {editingMessageId !== message.id && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 5 }}
+                                <div
                                     className="mt-1 self-end opacity-0 group-hover/message:opacity-100 transition-opacity duration-200"
                                 >
                                     <Button
@@ -121,7 +120,7 @@ export const Message: React.FC<MessageProps> = ({
                                     >
                                         <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                                     </Button>
-                                </motion.div>
+                                </div>
                             )}
                         </>
                     ) : isErrorMessage ? (
@@ -135,64 +134,30 @@ export const Message: React.FC<MessageProps> = ({
 
                         <div className="py-2">
                             <div className="flex items-center space-x-2">
-                                <motion.div
+                                <div
                                     className="thinking-animation flex items-center space-x-1"
-                                    initial={{ opacity: 0.7 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
                                 >
                                     {[0, 1, 2].map((i) => (
-                                        <motion.div
+                                        <div
                                             key={`dot-${i}`}
                                             className="h-2 w-2 bg-neutral-800 dark:bg-neutral-200 rounded-full"
-                                            initial={{ y: 0 }}
-                                            animate={{
-                                                y: [0, -10, 0],
-                                                scale: [1, 1.2, 1]
-                                            }}
-                                            transition={{
-                                                duration: 1.2,
-                                                repeat: Infinity,
-                                                delay: i * 0.2,
-                                                ease: "easeInOut"
+                                            style={{
+                                                animation: `bounce 1.2s infinite ${i * 0.2}s`
                                             }}
                                         />
                                     ))}
-                                </motion.div>
-                                <motion.div
+                                </div>
+                                <div
                                     className="thinking-animation-text text-sm text-neutral-600 dark:text-neutral-400 ml-1"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ duration: 0.3 }}
                                 >
-                                    <motion.span
-                                        initial={{ opacity: 0.5 }}
-                                        animate={{
-                                            opacity: [0.5, 1, 0.5],
-                                            scale: [1, 1.02, 1]
-                                        }}
-                                        transition={{
-                                            duration: 2,
-                                            repeat: Infinity,
-                                            ease: "easeInOut"
-                                        }}
-                                    >
-                                        Thinking
-                                    </motion.span>
-                                </motion.div>
+                                    <span>Thinking</span>
+                                </div>
                             </div>
 
-                            <motion.div
+                            <div
                                 className="thinking-bar mt-2 h-[2px] bg-gradient-to-r from-transparent via-neutral-800 to-transparent dark:via-neutral-200 rounded-full"
-                                initial={{ width: "0%", opacity: 0.7 }}
-                                animate={{
-                                    width: ["0%", "30%", "70%", "100%", "70%", "30%", "0%"],
-                                    opacity: [0.5, 0.8, 1, 0.8, 0.5]
-                                }}
-                                transition={{
-                                    duration: 3.5,
-                                    repeat: Infinity,
-                                    ease: "easeInOut"
+                                style={{
+                                    animation: `shimmer 3.5s infinite`
                                 }}
                             />
                         </div>
@@ -248,6 +213,7 @@ export const Message: React.FC<MessageProps> = ({
                     </div>
                 )}
             </div>
-        </motion.div>
+        </div>
     );
-};
+});
+Message.displayName = 'Message';

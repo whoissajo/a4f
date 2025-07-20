@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, Check, ThumbsUp, ThumbsDown, Volume2, Download, VolumeX, RotateCcw, Zap, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { SimpleMessage, cn } from '@/lib/utils';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -20,7 +19,7 @@ interface InteractionButtonsProps {
   selectedBrowserTtsVoiceURI?: string;
 }
 
-export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
+const InteractionButtons: React.FC<InteractionButtonsProps> = ({
   message,
   onRetry,
   onEdit, // Added for edit button
@@ -211,9 +210,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
   };
 
   const insightsButton = (
-    <motion.div
-      whileTap={{ scale: 0.85 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    <div
     >
       <Button
         variant="ghost"
@@ -224,7 +221,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
       >
         <Zap className="h-4 w-4 text-orange-500" />
       </Button>
-    </motion.div>
+    </div>
   );
 
   return (
@@ -249,10 +246,7 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
 
       {/* Edit button for user messages */}
       {messageRole === 'user' && onEdit && (
-        <motion.div
-          whileTap={{ scale: 0.85 }}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        >
+        <div>
           <Button
             variant="ghost"
             size="sm"
@@ -263,14 +257,11 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
           >
             <Pencil className="h-4 w-4" />
           </Button>
-        </motion.div>
+        </div>
       )}
 
       {messageRole === 'assistant' && onRetry && (isError || content) && (
-        <motion.div
-            whileTap={{ scale: 0.85 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        >
+        <div>
             <Button
                 variant="ghost"
                 size="sm"
@@ -281,12 +272,9 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
             >
                 <RotateCcw className="h-4 w-4" />
             </Button>
-        </motion.div>
+        </div>
       )}
-      <motion.div
-        whileTap={{ scale: 0.85 }}
-        transition={{ type: "spring", stiffness: 400, damping: 17 }}
-      >
+      <div>
         <Button
           variant="ghost"
           size="sm"
@@ -300,12 +288,9 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
         >
           <ThumbsUp className={cn("h-4 w-4", isLiked && "fill-current")} />
         </Button>
-      </motion.div>
+      </div>
 
-      <motion.div
-        whileTap={{ scale: 0.85 }}
-        transition={{ type: "spring", stiffness: 400, damping: 17 }}
-      >
+      <div>
         <Button
           variant="ghost"
           size="sm"
@@ -319,13 +304,10 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
         >
           <ThumbsDown className={cn("h-4 w-4", isDisliked && "fill-current")} />
         </Button>
-      </motion.div>
+      </div>
 
       {isTextToSpeechFeatureEnabled && !imageUrl && (
-        <motion.div
-          whileTap={{ scale: 0.85 }}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        >
+        <div>
           <Button
             variant="ghost"
             size="sm"
@@ -335,14 +317,11 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
           >
             {isSpeaking ? <VolumeX className="h-4 w-4 text-red-500" /> : <Volume2 className="h-4 w-4" />}
           </Button>
-        </motion.div>
+        </div>
       )}
 
       {imageUrl && (
-        <motion.div
-          whileTap={{ scale: 0.85 }}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        >
+        <div>
           <Button
             variant="ghost"
             size="sm"
@@ -352,13 +331,10 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
           >
             <Download className="h-4 w-4" />
           </Button>
-        </motion.div>
+        </div>
       )}
 
-      <motion.div
-        whileTap={{ scale: 0.85 }}
-        transition={{ type: "spring", stiffness: 400, damping: 17 }}
-      >
+      <div>
         <Button
           variant="ghost"
           size="sm"
@@ -372,8 +348,9 @@ export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
             <Copy className="h-4 w-4" />
           )}
         </Button>
-      </motion.div>
+      </div>
     </div>
   );
 };
 
+export default InteractionButtons;

@@ -9,7 +9,6 @@ import Image from 'next/image'; // Keep this import
 import { useTheme } from 'next-themes';
 import { useHotkeys } from 'react-hotkeys-hook';
 
-import { AnimatePresence, motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
 import { ArrowDown } from '@phosphor-icons/react';
 import { toast } from 'sonner';
@@ -249,10 +248,7 @@ const HomeContent = () => {
                     showCenteredForm && showChatInterface ? "justify-center -mt-16" : "justify-start"
                 )}>
                     {!apiKey && isKeyLoaded && !showSimpleApiKeyInput && ( 
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
+                        <div
                             className="text-center flex flex-col items-center justify-center h-full -mt-20"
                         >
                             <KeyRound size={48} className="text-muted-foreground mb-4" />
@@ -261,14 +257,11 @@ const HomeContent = () => {
                                 Please set your API key via the <KeyRound className="inline h-4 w-4 align-text-bottom"/> settings menu to begin.
                             </p>
                             <Button onClick={() => setShowSimpleApiKeyInput(true)}>Set API Key</Button>
-                        </motion.div>
+                        </div>
                     )}
 
                     {showCenteredForm && showChatInterface && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
+                        <div
                             className="text-center"
                         >
                             <h1 className="text-2xl sm:text-4xl mb-4 sm:mb-6 text-neutral-800 dark:text-neutral-100 font-syne">
@@ -316,7 +309,7 @@ const HomeContent = () => {
                                 isProModelsEnabled={isProModelsEnabled}
                             />
                             <DateTimeWidgets status={status} apiKey={apiKey} onDateTimeClick={handleWidgetDateTimeClick} />
-                        </motion.div>
+                        </div>
                     )}
 
                     {!showCenteredForm && showChatInterface && messages.length > 0 && (
@@ -338,34 +331,20 @@ const HomeContent = () => {
                 </div>
             </div>
 
-            <AnimatePresence>
-                {!showCenteredForm && showChatInterface && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        transition={{ duration: 0.3 }}
+            {
+                !showCenteredForm && showChatInterface && (
+                    <div
                         className="fixed bottom-4 left-0 right-0 w-full max-w-[26rem] sm:max-w-2xl lg:max-w-4xl mx-auto z-20 px-2 sm:px-0"
                     >
                         {showScrollButton && (
                             <div className="absolute -top-14 left-0 right-0 flex justify-center">
-                                <motion.button
+                                <button
                                     onClick={scrollToBottom}
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.8 }}
-                                    transition={{
-                                        duration: 0.5,
-                                        ease: [0.22, 1, 0.36, 1],
-                                        type: "spring",
-                                        stiffness: 120,
-                                        damping: 14
-                                    }}
                                     className="flex items-center justify-center w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm border border-border dark:border-neutral-700 shadow-sm hover:shadow-md hover:bg-background/95 transition-all duration-300"
                                     aria-label="Scroll to bottom"
                                 >
                                     <ArrowDown weight="bold" className="w-5 h-5 text-foreground" />
-                                </motion.button>
+                                </button>
                             </div>
                         )}
                         <FormComponent
@@ -409,9 +388,9 @@ const HomeContent = () => {
                             handleCancelEdit={handleCancelEdit}
                             isProModelsEnabled={isProModelsEnabled}
                         />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    </div>
+                )
+            }
         </div>
     );
 };
