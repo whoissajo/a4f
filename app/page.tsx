@@ -115,11 +115,23 @@ const HomeContent = () => {
     }, [enabledSearchGroupIds]);
 
     const modelsToShow = useMemo(() => {
-        if (isProModelsEnabled) {
-            return availableModels;
+        const tierFilteredModels = isProModelsEnabled
+            ? availableModels
+            : availableModels.filter(model => model.modelType !== 'pro');
+
+        const desiredApiType =
+            selectedGroup === 'image' ? 'images/generations' : 'chat/completion';
+
+        return tierFilteredModels.filter(model => model.apiType === desiredApiType);
+    }, [availableModels, isProModelsEnabled, selectedGroup]);
+
+    useEffect(() => {
+        const matchingModel = modelsToShow.find(model => model.value === selectedModel);
+
+        if (!matchingModel && modelsToShow.length > 0) {
+            setSelectedModel(modelsToShow[0].value);
         }
-        return availableModels.filter(model => model.modelType !== 'pro');
-    }, [availableModels, isProModelsEnabled]);
+    }, [modelsToShow, selectedModel, setSelectedModel]);
 
 
     const showCenteredForm = messages.length === 0 && !hasSubmitted;
