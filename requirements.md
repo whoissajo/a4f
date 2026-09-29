@@ -173,7 +173,7 @@ This section outlines the sequential steps for an AI to build the Flutter Androi
 
 - Keep `A4F_API_KEY` server-side only. Never place it in browser local storage, public source, or `NEXT_PUBLIC_*` variables.
 - Use the official A4F base URL `https://api.a4f.co/v1` by default.
-- Proxy A4F requests through same-origin Next.js routes so the browser never receives the provider secret.
+- Proxy A4F requests through same-origin Vercel serverless functions so the browser never receives the provider secret while preserving the existing static export/Capacitor build.
 - Preserve OpenAI-compatible chat request/response semantics and SSE streaming for `/v1/chat/completions`.
 - Discover models dynamically through `/v1/models`, including `type`, `features`, `context_window`, `description`, and `logo` metadata.
 - Keep chat and `images/generations` model types separate in the model selector.
