@@ -60,13 +60,8 @@ export const ApiKeyTab: React.FC<ApiKeyTabProps> = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">{keyInfo.name}</h3>
-          <div className={cn(
-            "text-xs font-medium px-2 py-0.5 rounded-full",
-            keyType === 'a4f' 
-              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-          )}>
-            {keyType === 'a4f' ? 'Required' : 'Optional'}
+          <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+            Optional
           </div>
         </div>
         <p className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center gap-1">
@@ -143,7 +138,9 @@ export const ApiKeyTab: React.FC<ApiKeyTabProps> = ({
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            {keyType === 'a4f' ? 'API key required to use the chat' : 'API key required for web search'}
+            {keyType === 'tavily'
+              ? 'API key required for web search'
+              : 'API key used for premium Text-to-Speech voices'}
           </div>
         )}
         
