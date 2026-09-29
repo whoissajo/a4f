@@ -13,6 +13,32 @@ import {
 import { processStreamChunks } from './stream-handler-helpers/chunkProcessor';
 import { handleStreamError } from './stream-handler-helpers/errorHandler';
 
+async function resolveAttachmentUrl(url: string): Promise<string> {
+  if (!url.startsWith('blob:')) {
+    return url;
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to read attachment: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Could not convert attachment to a data URL.'));
+      }
+    };
+    reader.onerror = () => reject(reader.error || new Error('Could not read attachment.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 interface UseChatStreamHandlerProps {
     apiKey: string | null;
     selectedModelValue: string;
@@ -239,11 +265,23 @@ export function useChatStreamHandler({
     };
 
     const apiPayloadMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
-    
+    const currentAttachmentUrls = await Promise.all(
+      currentAttachments
+        .filter((attachment) => attachment.contentType.startsWith('image/') && Boolean(attachment.url))
+        .map(async (attachment) => {
+          try {
+            return await resolveAttachmentUrl(attachment.url);
+          } catch (error) {
+            console.error('Attachment preparation failed:', error);
+            return null;
+          }
+        }),
+    );
+
     if (currentSystemPrompt && currentSystemPrompt.trim()) {
-        apiPayloadMessages.push({ 
-            role: 'system', 
-            content: currentSystemPrompt.trim() 
+        apiPayloadMessages.push({
+            role: 'system',
+            content: currentSystemPrompt.trim()
         });
     }
     
@@ -261,12 +299,12 @@ export function useChatStreamHandler({
                     contentParts.push({ type: 'text', text: content });
                 }
 
-                if (isCurrentUserMessage && currentAttachments.length > 0) {
-                    for (const attachment of currentAttachments) {
-                        if (attachment.contentType.startsWith('image/') && attachment.url) {
+                if (isCurrentUserMessage && currentAttachmentUrls.length > 0) {
+                    for (const attachmentUrl of currentAttachmentUrls) {
+                        if (attachmentUrl) {
                             contentParts.push({
                                 type: 'image_url',
-                                image_url: { url: attachment.url },
+                                image_url: { url: attachmentUrl },
                             });
                         }
                     }
