@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import OpenAI from 'openai';
 import { toast } from 'sonner';
 import {
-    API_BASE_URL,
+    A4F_PROXY_BASE_URL,
     SimpleMessage,
     Attachment,
     ModelUIData,
@@ -23,6 +23,7 @@ interface UseChatStreamHandlerProps {
     currentSystemPrompt: string;
     setMessages: React.Dispatch<React.SetStateAction<SimpleMessage[]>>;
     setInput: (input: string) => void;
+    setAttachments: React.Dispatch<React.SetStateAction<Attachment[]>>;
     setHasSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
     onMessagesUpdatedForHistory: (updatedMessages: SimpleMessage[]) => void; // Callback to trigger history save/update
 }
@@ -41,6 +42,7 @@ export function useChatStreamHandler({
     currentSystemPrompt,
     setMessages,
     setInput,
+    setAttachments,
     setHasSubmitted,
     onMessagesUpdatedForHistory, // New callback
 }: UseChatStreamHandlerProps) {
@@ -51,9 +53,11 @@ export function useChatStreamHandler({
   const [errorType, setErrorType] = useState<SimpleMessage['errorType']>('generic');
   const [errorDetails, setErrorDetails] = useState<any>(null);
   const currentAssistantMessageId = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleStopStreaming = useCallback(() => {
     internalIsStreamCancelledByUserRef.current = true;
+    abortControllerRef.current?.abort();
     setIsStreamCancelledForParent(true);
     toast.info("Stopping message generation...");
   }, [setIsStreamCancelledForParent]);
@@ -111,14 +115,16 @@ export function useChatStreamHandler({
       onMessagesUpdatedForHistory(updatedMessagesForUi); // Trigger history update
 
       setInput('');
+      setAttachments([]);
       if (currentMessages.length === 0) setHasSubmitted(true);
+      abortControllerRef.current = new AbortController();
       try {
-        const response = await fetch('https://api.a4f.co/v1/images/generations', {
+        const response = await fetch(`${A4F_PROXY_BASE_URL}/images/generations`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
           },
+          signal: abortControllerRef.current.signal,
           body: JSON.stringify({
             model: selectedModelValue,
             prompt,
@@ -278,12 +284,14 @@ export function useChatStreamHandler({
     onMessagesUpdatedForHistory(updatedMessagesForUi);
 
     setInput('');
+    setAttachments([]);
     if (currentMessages.length === 0) setHasSubmitted(true);
 
+    abortControllerRef.current = new AbortController();
 
     const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: API_BASE_URL,
+        apiKey: apiKey || 'server-managed',
+        baseURL: A4F_PROXY_BASE_URL,
         dangerouslyAllowBrowser: true,
     });
 
@@ -292,7 +300,8 @@ export function useChatStreamHandler({
             model: selectedModelValue,
             messages: apiPayloadMessages,
             stream: true,
-            stream_options: { include_usage: true } // Request usage statistics
+            stream_options: { include_usage: true },
+            signal: abortControllerRef.current.signal,
         } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming);
 
         const {
@@ -371,7 +380,31 @@ export function useChatStreamHandler({
     } catch (error: any) {
         const errorResponseEndTime = Date.now();
         const errorRoundTripTime = (errorResponseEndTime - requestStartTime) / 1000;
-        
+
+        if (internalIsStreamCancelledByUserRef.current) {
+          const cancelledMessageId = currentAssistantMessageId.current;
+          if (cancelledMessageId) {
+            setMessages(prev => {
+              const cancelledMessages = prev.map(msg =>
+                msg.id === cancelledMessageId
+                  ? {
+                      ...msg,
+                      content: `${msg.content || ''}\n\n*(Message generation stopped by user)*`,
+                      isStreaming: false,
+                      isInterrupted: true,
+                      isError: false,
+                      roundTripTime: errorRoundTripTime,
+                    }
+                  : msg
+              );
+              onMessagesUpdatedForHistory(cancelledMessages);
+              return cancelledMessages;
+            });
+          }
+          currentAssistantMessageId.current = null;
+          return;
+        }
+
         handleStreamError({
             error,
             setMessages, // This updates UI
@@ -394,6 +427,7 @@ export function useChatStreamHandler({
         toast.error(lastError || 'An unexpected error occurred while processing your request.');
         currentAssistantMessageId.current = null;
     } finally {
+        abortControllerRef.current = null;
         setChatStatus('ready');
     }
   }, [
@@ -405,8 +439,9 @@ export function useChatStreamHandler({
       currentSelectedGroup, 
       currentSystemPrompt, 
       setMessages, 
-      setInput, 
-      setHasSubmitted, 
+      setInput,
+      setAttachments,
+      setHasSubmitted,
       setIsStreamCancelledForParent,
       chatStatus,
       onMessagesUpdatedForHistory,
