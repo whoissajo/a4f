@@ -19,7 +19,7 @@ interface InteractionButtonsProps {
   selectedBrowserTtsVoiceURI?: string;
 }
 
-const InteractionButtons: React.FC<InteractionButtonsProps> = ({
+export const InteractionButtons: React.FC<InteractionButtonsProps> = ({
   message,
   onRetry,
   onEdit, // Added for edit button
