@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import OpenAI from 'openai';
 import { toast } from 'sonner';
 import {
-    API_BASE_URL,
+    A4F_PROXY_BASE_URL,
     SimpleMessage,
     Attachment,
     ModelUIData,
@@ -12,6 +12,32 @@ import {
 } from '@/lib/utils';
 import { processStreamChunks } from './stream-handler-helpers/chunkProcessor';
 import { handleStreamError } from './stream-handler-helpers/errorHandler';
+
+async function resolveAttachmentUrl(url: string): Promise<string> {
+  if (!url.startsWith('blob:')) {
+    return url;
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to read attachment: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Could not convert attachment to a data URL.'));
+      }
+    };
+    reader.onerror = () => reject(reader.error || new Error('Could not read attachment.'));
+    reader.readAsDataURL(blob);
+  });
+}
 
 interface UseChatStreamHandlerProps {
     apiKey: string | null;
@@ -23,6 +49,7 @@ interface UseChatStreamHandlerProps {
     currentSystemPrompt: string;
     setMessages: React.Dispatch<React.SetStateAction<SimpleMessage[]>>;
     setInput: (input: string) => void;
+    setAttachments: React.Dispatch<React.SetStateAction<Attachment[]>>;
     setHasSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
     onMessagesUpdatedForHistory: (updatedMessages: SimpleMessage[]) => void; // Callback to trigger history save/update
 }
@@ -41,6 +68,7 @@ export function useChatStreamHandler({
     currentSystemPrompt,
     setMessages,
     setInput,
+    setAttachments,
     setHasSubmitted,
     onMessagesUpdatedForHistory, // New callback
 }: UseChatStreamHandlerProps) {
@@ -51,9 +79,11 @@ export function useChatStreamHandler({
   const [errorType, setErrorType] = useState<SimpleMessage['errorType']>('generic');
   const [errorDetails, setErrorDetails] = useState<any>(null);
   const currentAssistantMessageId = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleStopStreaming = useCallback(() => {
     internalIsStreamCancelledByUserRef.current = true;
+    abortControllerRef.current?.abort();
     setIsStreamCancelledForParent(true);
     toast.info("Stopping message generation...");
   }, [setIsStreamCancelledForParent]);
@@ -111,14 +141,16 @@ export function useChatStreamHandler({
       onMessagesUpdatedForHistory(updatedMessagesForUi); // Trigger history update
 
       setInput('');
+      setAttachments([]);
       if (currentMessages.length === 0) setHasSubmitted(true);
+      abortControllerRef.current = new AbortController();
       try {
-        const response = await fetch('https://api.a4f.co/v1/images/generations', {
+        const response = await fetch(`${A4F_PROXY_BASE_URL}/images/generations`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
           },
+          signal: abortControllerRef.current.signal,
           body: JSON.stringify({
             model: selectedModelValue,
             prompt,
@@ -233,11 +265,23 @@ export function useChatStreamHandler({
     };
 
     const apiPayloadMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
-    
+    const currentAttachmentUrls = await Promise.all(
+      currentAttachments
+        .filter((attachment) => attachment.contentType.startsWith('image/') && Boolean(attachment.url))
+        .map(async (attachment) => {
+          try {
+            return await resolveAttachmentUrl(attachment.url);
+          } catch (error) {
+            console.error('Attachment preparation failed:', error);
+            return null;
+          }
+        }),
+    );
+
     if (currentSystemPrompt && currentSystemPrompt.trim()) {
-        apiPayloadMessages.push({ 
-            role: 'system', 
-            content: currentSystemPrompt.trim() 
+        apiPayloadMessages.push({
+            role: 'system',
+            content: currentSystemPrompt.trim()
         });
     }
     
@@ -246,11 +290,29 @@ export function useChatStreamHandler({
         .filter(msg => msg.role === 'user' || msg.role === 'assistant')
         .forEach(msg => {
             const content = msg.content || '';
-            
+
             if (msg.role === 'user') {
+                const isCurrentUserMessage = msg.id === newUserMessage.id;
+                const contentParts: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
+
+                if (content) {
+                    contentParts.push({ type: 'text', text: content });
+                }
+
+                if (isCurrentUserMessage && currentAttachmentUrls.length > 0) {
+                    for (const attachmentUrl of currentAttachmentUrls) {
+                        if (attachmentUrl) {
+                            contentParts.push({
+                                type: 'image_url',
+                                image_url: { url: attachmentUrl },
+                            });
+                        }
+                    }
+                }
+
                 apiPayloadMessages.push({
                     role: 'user',
-                    content: content as string | OpenAI.Chat.Completions.ChatCompletionContentPart[]
+                    content: contentParts.length > 0 ? contentParts : content,
                 });
             } else {
                 apiPayloadMessages.push({
@@ -278,12 +340,14 @@ export function useChatStreamHandler({
     onMessagesUpdatedForHistory(updatedMessagesForUi);
 
     setInput('');
+    setAttachments([]);
     if (currentMessages.length === 0) setHasSubmitted(true);
 
+    abortControllerRef.current = new AbortController();
 
     const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: API_BASE_URL,
+        apiKey: apiKey || 'server-managed',
+        baseURL: A4F_PROXY_BASE_URL,
         dangerouslyAllowBrowser: true,
     });
 
@@ -292,7 +356,8 @@ export function useChatStreamHandler({
             model: selectedModelValue,
             messages: apiPayloadMessages,
             stream: true,
-            stream_options: { include_usage: true } // Request usage statistics
+            stream_options: { include_usage: true },
+            signal: abortControllerRef.current.signal,
         } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming);
 
         const {
@@ -371,7 +436,31 @@ export function useChatStreamHandler({
     } catch (error: any) {
         const errorResponseEndTime = Date.now();
         const errorRoundTripTime = (errorResponseEndTime - requestStartTime) / 1000;
-        
+
+        if (internalIsStreamCancelledByUserRef.current) {
+          const cancelledMessageId = currentAssistantMessageId.current;
+          if (cancelledMessageId) {
+            setMessages(prev => {
+              const cancelledMessages = prev.map(msg =>
+                msg.id === cancelledMessageId
+                  ? {
+                      ...msg,
+                      content: `${msg.content || ''}\n\n*(Message generation stopped by user)*`,
+                      isStreaming: false,
+                      isInterrupted: true,
+                      isError: false,
+                      roundTripTime: errorRoundTripTime,
+                    }
+                  : msg
+              );
+              onMessagesUpdatedForHistory(cancelledMessages);
+              return cancelledMessages;
+            });
+          }
+          currentAssistantMessageId.current = null;
+          return;
+        }
+
         handleStreamError({
             error,
             setMessages, // This updates UI
@@ -394,6 +483,7 @@ export function useChatStreamHandler({
         toast.error(lastError || 'An unexpected error occurred while processing your request.');
         currentAssistantMessageId.current = null;
     } finally {
+        abortControllerRef.current = null;
         setChatStatus('ready');
     }
   }, [
@@ -405,8 +495,9 @@ export function useChatStreamHandler({
       currentSelectedGroup, 
       currentSystemPrompt, 
       setMessages, 
-      setInput, 
-      setHasSubmitted, 
+      setInput,
+      setAttachments,
+      setHasSubmitted,
       setIsStreamCancelledForParent,
       chatStatus,
       onMessagesUpdatedForHistory,

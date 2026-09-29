@@ -22,6 +22,36 @@ export const ApiKeyTab: React.FC<ApiKeyTabProps> = ({
     setShowKey(false);
   }, [keyType, hasKey]);
   
+  if (keyType === 'a4f') {
+    return (
+      <div className="space-y-4 p-1">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">{keyInfo.name}</h3>
+            <div className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+              Server managed
+            </div>
+          </div>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            {keyInfo.description}
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-300">
+          The browser never receives the A4F secret. Set <code className="font-mono">A4F_API_KEY</code> in the deployment environment, then restart/redeploy the app.
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.open(keyInfo.url, '_blank', 'noopener,noreferrer')}
+        >
+          A4F Authentication Docs <ExternalLink className="ml-1 h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
+
   // For displaying masked characters when key exists
   const maskedKey = hasKey ? '•'.repeat(Math.min(24, keyInfo.key?.length || 0)) : '';
   

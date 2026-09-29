@@ -16,7 +16,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const API_BASE_URL = 'https://api.a4f.co/v1';
-// export const API_BASE_URL = 'http://localhost:8000/v1';
+export const A4F_PROXY_BASE_URL = '/api/a4f';
 
 export interface SimpleMessage {
   id: string;
@@ -65,6 +65,7 @@ export interface ModelUIData {
   features?: string[]; // Array of supported features (e.g., "vision", "function_calling")
   modelType: 'free' | 'pro'; // Tier of the model
   contextLength: number; // API context_window
+  apiType: string; // A4F endpoint/model type, e.g. chat/completion or images/generations
 }
 
 export interface ApiModel {
@@ -73,10 +74,11 @@ export interface ApiModel {
   owned_by: string;
   base_model: string; // e.g., "gpt-3.5-turbo", "claude-3-opus"
   context_window: number;
-  type: string;
-  logo: string;
-  description: string;
+  type?: string;
+  logo?: string;
+  description?: string;
   features?: string[];
+  pricing?: Record<string, unknown>;
 }
 
 export interface ApiModelListResponse {
@@ -106,7 +108,11 @@ export interface ApiChatCompletionChunk {
 }
 
 // Updated mapping function
-export const mapApiModelToUIData = (apiModel: ApiModel, planContext: 'free' | 'pro'): ModelUIData => {
+export const mapApiModelToUIData = (
+  apiModel: ApiModel,
+  planContext: 'free' | 'pro',
+  apiTypeOverride?: string,
+): ModelUIData => {
   const modelId = apiModel.id;
   const parts = modelId.split('/');
   const apiProviderPart = parts[0] || "unknown-provider";
@@ -116,17 +122,22 @@ export const mapApiModelToUIData = (apiModel: ApiModel, planContext: 'free' | 'p
   let fallbackIconElement: React.ElementType = Bot;
   if (modelFeatures.includes('vision')) {
     fallbackIconElement = EyeIcon;
-  } else if (modelId.toLowerCase().includes('claude-3-5-sonnet') || modelId.toLowerCase().includes('deepseek-v3')) {
+  } else if (
+    modelId.toLowerCase().includes('claude-3-5-sonnet') ||
+    modelId.toLowerCase().includes('deepseek-v3')
+  ) {
     fallbackIconElement = BrainCircuit;
   }
 
-  // Assign modelType directly from the planContext (passed from app/page.tsx based on API fetch)
-  let modelType: 'free' | 'pro' = planContext;
-
+  const modelType: 'free' | 'pro' = planContext;
   const modelColor = modelType === 'pro' ? 'purple' : 'green';
 
-  const baseModelName = apiModel.base_model || modelId.substring(modelId.lastIndexOf('/') + 1) || modelId;
-  const displayLabel = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
+  const baseModelName =
+    apiModel.base_model ||
+    modelId.substring(modelId.lastIndexOf('/') + 1) ||
+    modelId;
+  const displayLabel =
+    baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
 
   return {
     value: modelId,
@@ -136,11 +147,12 @@ export const mapApiModelToUIData = (apiModel: ApiModel, planContext: 'free' | 'p
     owner: apiModel.owned_by,
     icon: fallbackIconElement,
     logoUrl: apiModel.logo || undefined,
-    description: apiModel.description,
+    description: apiModel.description || '',
     color: modelColor,
     features: modelFeatures,
-    modelType: modelType,
-    contextLength: apiModel.context_window,
+    modelType,
+    contextLength: apiModel.context_window || 0,
+    apiType: apiModel.type || apiTypeOverride || 'chat/completion',
   };
 };
 
