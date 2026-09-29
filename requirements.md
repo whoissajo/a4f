@@ -168,3 +168,16 @@ This section outlines the sequential steps for an AI to build the Flutter Androi
 *   The AI is expected to make reasonable design decisions for Flutter-specific implementations (e.g., choosing appropriate Flutter widgets, state management patterns) while adhering strictly to the visual and functional requirements.
 *   Any third-party libraries or services used by the web app (e.g., analytics, specific authentication providers) that are not explicitly mentioned but are critical for functionality should be identified and integrated into the Flutter app. (Based on the file list, no obvious external services beyond core chat functionality are apparent, but this is a general note).
 *   The `main-got` directory is considered a legacy or alternative version and its contents should not be prioritized over the top-level `app/` and `components/` directories.
+
+## A4F API Integration Requirements (Updated September 29, 2026)
+
+- Keep `A4F_API_KEY` server-side only. Never place it in browser local storage, public source, or `NEXT_PUBLIC_*` variables.
+- Use the official A4F base URL `https://api.a4f.co/v1` by default.
+- Proxy A4F requests through same-origin Next.js routes so the browser never receives the provider secret.
+- Preserve OpenAI-compatible chat request/response semantics and SSE streaming for `/v1/chat/completions`.
+- Discover models dynamically through `/v1/models`, including `type`, `features`, `context_window`, `description`, and `logo` metadata.
+- Keep chat and `images/generations` model types separate in the model selector.
+- Support secure proxying for Responses, image generation/editing, embeddings, audio speech/transcription, video generation, models, and usage endpoints.
+- For multimodal chat, send image inputs using OpenAI-compatible content parts with `image_url`.
+- Abort the upstream chat stream when the user presses Stop.
+- Keep real secrets out of GitHub; configure them in deployment environment settings.
