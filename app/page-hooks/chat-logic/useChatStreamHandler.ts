@@ -252,11 +252,29 @@ export function useChatStreamHandler({
         .filter(msg => msg.role === 'user' || msg.role === 'assistant')
         .forEach(msg => {
             const content = msg.content || '';
-            
+
             if (msg.role === 'user') {
+                const isCurrentUserMessage = msg.id === newUserMessage.id;
+                const contentParts: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
+
+                if (content) {
+                    contentParts.push({ type: 'text', text: content });
+                }
+
+                if (isCurrentUserMessage && currentAttachments.length > 0) {
+                    for (const attachment of currentAttachments) {
+                        if (attachment.contentType.startsWith('image/') && attachment.url) {
+                            contentParts.push({
+                                type: 'image_url',
+                                image_url: { url: attachment.url },
+                            });
+                        }
+                    }
+                }
+
                 apiPayloadMessages.push({
                     role: 'user',
-                    content: content as string | OpenAI.Chat.Completions.ChatCompletionContentPart[]
+                    content: contentParts.length > 0 ? contentParts : content,
                 });
             } else {
                 apiPayloadMessages.push({
