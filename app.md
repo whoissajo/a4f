@@ -99,7 +99,7 @@ This prompt is ready to be used in an app creator AI to generate a mobile app th
 
 The A4F integration now follows the current official API documentation. A4F supports OpenAI-compatible chat completions with streaming, a separate Responses API, model discovery with plan/type and extended metadata filters, image generation/editing, embeddings, audio speech/transcription, video generation, and usage reporting.
 
-The frontend no longer stores or sends the A4F secret from browser code. A Next.js server proxy under `app/api/a4f/` injects `A4F_API_KEY` on the server and forwards the supported requests to `https://api.a4f.co/v1`. A read-only status endpoint reports whether the deployment is configured without revealing the key.
+The frontend no longer stores or sends the A4F secret from browser code. Vercel serverless functions under `api/a4f/` inject `A4F_API_KEY` on the server and forward the supported requests to `https://api.a4f.co/v1`, while the Next.js frontend remains a static export for Capacitor. A read-only status endpoint reports whether the deployment is configured without revealing the key.
 
 Normal chat uses `/v1/chat/completions` and SSE streaming. The Responses endpoint is available through the secure proxy for non-streaming advanced workloads; the current A4F documentation states that streaming is not yet supported by `/v1/responses`. Image mode discovers only models with A4F type `images/generations`.
 
