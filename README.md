@@ -1,22 +1,28 @@
 # Scira Frontend Demo
 
-This is a modern chat application frontend built with Next.js and React, featuring advanced customization, chat history, speech-to-text, text-to-speech, and MCP (Model Context Protocol) integrations for services like GitHub, Google Drive, and Google Calendar.
+A modern Next.js + React AI chat application with model selection, streaming chat, image generation, chat history, speech features, and configurable integrations.
 
-## Features
+## A4F integration
 
-- **Chat with AI models** (OpenAI, Anthropic, etc.)
-- **Customizable chat experience** (system prompts, attachments, TTS, STT, etc.)
-- **Chat history** with save/load/delete
-- **API key management** for multiple providers
-- **Text-to-Speech (TTS)** and **Speech-to-Text (STT)**
-- **MCP Integrations** (GitHub, Google Drive, Google Calendar, and more coming soon)
-- **Modern, responsive UI**
+The application follows the current A4F API shape and keeps the A4F secret server-side.
+
+- Base API: `https://api.a4f.co/v1`
+- Server credential: `A4F_API_KEY`
+- Optional override: `A4F_BASE_URL`
+- Browser requests use same-origin `/api/a4f/*` routes; the server injects the A4F Bearer token.
+- Supported proxied endpoints include chat completions, Responses, image generation/editing, embeddings, audio speech/transcription, video generation, models, and usage.
+- Chat streaming uses `POST /v1/chat/completions` with SSE.
+- Model discovery uses `/v1/models` with plan/type filters and extended metadata.
+- Image mode is restricted to models whose A4F model type is `images/generations`.
+
+A4F's current authentication documentation says API keys must remain secret and must not be included in client-side code. Configure the key in Vercel/your server environment rather than in browser local storage.
 
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
-- npm or yarn
+- npm
 
 ### Installation
 
@@ -24,37 +30,48 @@ This is a modern chat application frontend built with Next.js and React, featuri
 npm install
 ```
 
+### Environment
+
+Copy `.env.example` to your deployment/environment configuration and set:
+
+```sh
+A4F_API_KEY=your_a4f_key
+A4F_BASE_URL=https://api.a4f.co/v1
+```
+
+Do not commit real secrets.
+
 ### Running the App
 
 ```sh
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) in your browser.
+Visit `http://localhost:3000`.
+
+### Validation
+
+```sh
+npm run typecheck
+npm run build
+```
+
+CI runs both checks on pushes and pull requests targeting `main`.
 
 ## Project Structure
 
-- `app/` — Main Next.js app pages and hooks
+- `app/` — Next.js application pages, API routes, and hooks
+- `app/api/a4f/` — secure same-origin A4F proxy
 - `components/` — UI and feature components
-- `hooks/` — Custom React hooks
-- `lib/` — Utility functions
-- `public/` — Static assets (icons, images)
+- `hooks/` — client-side state hooks
+- `lib/` — shared types and utilities
+- `public/` — static assets
 - `styles/` — CSS files
-- `types/` — TypeScript type definitions
 
-## Integrations (MCP)
+## Other Integrations
 
-- **GitHub**: Connect your GitHub account to access repositories and issues in chat.
-- **Google Drive**: Browse and share files from your Drive.
-- **Google Calendar**: View and manage calendar events.
-
-> Integrations are in progress. UI is available; backend/OAuth setup required for full functionality.
-
-## Accessibility
-- Dialogs and forms are accessible and screen-reader friendly.
-
-## Contributing
-Pull requests and issues are welcome!
+Tavily and ElevenLabs keys remain optional browser-managed integrations used by the existing web-search and speech features.
 
 ## License
+
 MIT
