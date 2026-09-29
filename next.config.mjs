@@ -2,7 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["geist"],
+  output: "export",
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
