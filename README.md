@@ -9,7 +9,7 @@ The application follows the current A4F API shape and keeps the A4F secret serve
 - Base API: `https://api.a4f.co/v1`
 - Server credential: `A4F_API_KEY`
 - Optional override: `A4F_BASE_URL`
-- Browser requests use same-origin `/api/a4f/*` routes; the server injects the A4F Bearer token.
+- Browser requests use same-origin `/api/a4f/*` routes; Vercel serverless functions inject the A4F Bearer token. The static Next export remains compatible with Capacitor (`out/`).
 - Supported proxied endpoints include chat completions, Responses, image generation/editing, embeddings, audio speech/transcription, video generation, models, and usage.
 - Chat streaming uses `POST /v1/chat/completions` with SSE.
 - Model discovery uses `/v1/models` with plan/type filters and extended metadata.
