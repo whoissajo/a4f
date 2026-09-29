@@ -520,6 +520,7 @@ export function useChatLogic() {
     currentSystemPrompt: systemPrompt,
     setMessages,
     setInput,
+    setAttachments,
     setHasSubmitted,
     onMessagesUpdatedForHistory: saveOrUpdateCurrentChatInHistory,
   });
